@@ -1,10 +1,16 @@
 <h2>Personality Profiles</h2>
-<div *ngIf="isLoading">Loading profiles...</div>
 <div *ngIf="error" class="error">{{ error }}</div>
+<div *ngIf="loading">Loading...</div>
 <div *ngIf="personalityResponse">
-  <div *ngFor="let profile of personalityResponse.profiles" class="profile-card">
-    <img [src]="profile.profile_image_url" alt="{{ profile.mbti_profile }}" />
-    <h3>{{ profile.mbti_profile }}</h3>
-    <p>{{ profile.personality_type }}</p>
+  <p>Total Profiles: {{ personalityResponse.count }}</p>
+  <div class="card-container">
+    <div
+      class="personality-card"
+      *ngFor="let profile of personalityResponse.profiles"
+      (click)="goToProfile(profile.id)">
+      <h3>{{ profile.mbti_profile }}</h3>
+      <img [src]="profile.profile_image_url" alt="{{ profile.mbti_profile }}" width="100">
+      <p>{{ profile.personality_type }}</p>
+    </div>
   </div>
 </div>

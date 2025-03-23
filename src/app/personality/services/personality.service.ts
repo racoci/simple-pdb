@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { PersonalityResponse } from './personality-response.model';
+import { PersonalityResponse } from '../models/personality-response.model';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +16,7 @@ export class PersonalityService {
   private readonly MBTI_MAP: { [key: string]: number } = {};
 
   // Base URL for the API
-  private readonly baseUrl: string = 'https://api.personality-database.com/api/v2/personalities';
+  private readonly baseUrl: string = '/api/v2/personalities';
 
   constructor(private http: HttpClient) {
     // Create a mapping similar to the Python MBTI_MAP:

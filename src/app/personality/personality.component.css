@@ -1,0 +1,17 @@
+.error { color: red; }
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.personality-card {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 1rem;
+  cursor: pointer;
+  width: 200px;
+  transition: box-shadow 0.3s;
+}
+.personality-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
