@@ -1,0 +1,10 @@
+<h2>Personality Profiles</h2>
+<div *ngIf="isLoading">Loading profiles...</div>
+<div *ngIf="error" class="error">{{ error }}</div>
+<div *ngIf="personalityResponse">
+  <div *ngFor="let profile of personalityResponse.profiles" class="profile-card">
+    <img [src]="profile.profile_image_url" alt="{{ profile.mbti_profile }}" />
+    <h3>{{ profile.mbti_profile }}</h3>
+    <p>{{ profile.personality_type }}</p>
+  </div>
+</div>
