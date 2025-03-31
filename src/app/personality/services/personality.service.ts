@@ -36,7 +36,7 @@ export class PersonalityService {
    */
   getMbtiCharacters(
     mbti: string,
-    category?: string,
+    category?: number,
     nextCursor?: string,
     limit?: number
   ): Observable<PersonalityResponse> {

@@ -23,7 +23,7 @@ export class PersonalityComponent implements OnInit {
 
   // For example, we're using 'ISTJ' with a category and a limit of 10 per request.
   private mbti = 'ISTJ';
-  private category = '0';
+  private category = 0;
   private limit = 10;
 
   constructor(
