@@ -3,6 +3,5 @@
     "target": "https://api.personality-database.com",
     "secure": true,
     "changeOrigin": true
-    //"pathRewrite": { "^/api": "" }
   }
 }
