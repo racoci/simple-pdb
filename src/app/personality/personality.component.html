@@ -1,16 +1,26 @@
 <h2>Personality Profiles</h2>
 <div *ngIf="error" class="error">{{ error }}</div>
-<div *ngIf="loading">Loading...</div>
-<div *ngIf="personalityResponse">
-  <p>Total Profiles: {{ personalityResponse.count }}</p>
-  <div class="card-container">
-    <div
-      class="personality-card"
-      *ngFor="let profile of personalityResponse.profiles"
-      (click)="goToProfile(profile.id)">
-      <h3>{{ profile.mbti_profile }}</h3>
-      <img [src]="profile.profile_image_url" alt="{{ profile.mbti_profile }}" width="100">
-      <p>{{ profile.personality_type }}</p>
-    </div>
+<div *ngIf="loading && profiles.length === 0">Loading...</div>
+
+<!-- Wrap the cards in a scrollable container with infiniteScroll -->
+<div class="card-container"
+      infiniteScroll
+      [infiniteScrollDistance]="2"
+      [infiniteScrollThrottle]="150"
+      (scrolled)="onScroll()">
+  <div
+    class="personality-card"
+    *ngFor="let profile of profiles"
+    (click)="goToProfile(profile.id)">
+    <h3>{{ profile.mbti_profile }}</h3>
+    <img [src]="profile.profile_image_url" alt="{{ profile.mbti_profile }}" width="100">
+    <p>{{ profile.personality_type }}</p>
   </div>
+</div>
+
+<!-- Optionally show a loading indicator at the bottom when more data is being fetched -->
+<div 
+  *ngIf="loading && profiles.length > 0" 
+  class="loading-more">
+  Loading more profiles...
 </div>
