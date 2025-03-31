@@ -1,0 +1,14 @@
+<div *ngIf="loading">
+  <p>Loading profile details...</p>
+</div>
+
+<div *ngIf="error">
+  <p>{{ error }}</p>
+</div>
+
+<div *ngIf="profileData">
+  <h2>{{ profileData.mbti_profile }}</h2>
+  <img *ngIf="profileData.profile_image_url" [src]="profileData.profile_image_url" alt="{{ profileData.mbti_profile }}">
+  <div [innerHTML]="profileData.wiki_description_html"></div>
+  <!-- Add more fields as needed -->
+</div>
