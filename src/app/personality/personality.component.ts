@@ -22,9 +22,9 @@ export class PersonalityComponent implements OnInit {
   hasMore = true;
 
   // For example, we're using 'ISTJ' with a category and a limit of 10 per request.
-  private mbti = 'ISTJ';
+  private mbti = 'ENTJ';
   private category = 0;
-  private limit = 10;
+  private limit = 50;
 
   constructor(
     private personalityService: PersonalityService,
