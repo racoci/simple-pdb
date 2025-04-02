@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import {FormsModule} from '@angular/forms';
 import {NgForOf} from '@angular/common';
+
 
 @Component({
   selector: 'app-profile-selector',
-  standalone: true,
-  imports: [FormsModule, NgForOf],
   template: `
     <form (ngSubmit)="onSubmit()" #selectorForm="ngForm">
       <div>
@@ -25,12 +25,33 @@ import {NgForOf} from '@angular/common';
 
       <button type="submit" [disabled]="!selectorForm.form.valid">Submit</button>
     </form>
-  `
+  `,
+  imports: [
+    FormsModule,
+    NgForOf
+  ],
+  styles: [
+    `
+      form {
+        display: flex;
+        flex-direction: column;
+        max-width: 300px;
+      }
+
+      div {
+        margin-bottom: 1rem;
+      }
+
+      label {
+        margin-bottom: 0.5rem;
+      }
+    `
+  ]
 })
 export class ProfileSelectorComponent {
   mbtiList: string[] = [
-    'ISTJ', 'ESTJ', 'ISFJ', 'ESFJ', 'ESFP', 'ISFP', 'ESTP', 'ISTP',
-    'INFJ', 'ENFJ', 'INFP', 'ENFP', 'INTP', 'ENTP', 'INTJ', 'ENTJ'
+    'ISTJ','ESTJ','ISFJ','ESFJ','ESFP','ISFP','ESTP','ISTP',
+    'INFJ','ENFJ','INFP','ENFP','INTP','ENTP','INTJ','ENTJ'
   ];
 
   categoryOptions: { label: string, value: string }[] = [
@@ -75,8 +96,16 @@ export class ProfileSelectorComponent {
   selectedMbti: string = this.mbtiList[0];
   selectedCategory: string = "";
 
+  constructor(private router: Router) {}
+
   onSubmit() {
-    console.log("Selected MBTI:", this.selectedMbti);
-    console.log("Selected Category:", this.selectedCategory || "None");
+    // Build the query parameters.
+    const queryParams: any = { mbti: this.selectedMbti };
+    if (this.selectedCategory) {
+      queryParams.category = this.selectedCategory;
+    }
+
+    // Navigate to the 'personality' route with the selected parameters.
+    this.router.navigate(['/personality'], { queryParams });
   }
 }

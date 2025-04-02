@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PersonalityResponse, Profile } from './models/personality-response.model';
 import { PersonalityService } from './services/personality.service';
-import { Router } from '@angular/router';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { InfiniteScrollModule } from 'ngx-infinite-scroll';
@@ -21,18 +21,27 @@ export class PersonalityComponent implements OnInit {
   nextCursor: string | null = null;
   hasMore = true;
 
-  // For example, we're using 'ISTJ' with a category and a limit of 10 per request.
+  // Default values can be overridden by query parameters.
   private mbti = 'ENTJ';
   private category = 0;
   private limit = 50;
 
   constructor(
     private personalityService: PersonalityService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-    this.loadProfiles();  // initial load
+    // Subscribe to query parameters.
+    this.route.queryParams.subscribe(params => {
+      this.mbti = params['mbti'] || this.mbti;
+      this.category = params['category'] ? +params['category'] : this.category;
+      this.profiles = [];
+      this.nextCursor = null;
+      this.hasMore = true;
+      this.loadProfiles();  // Load profiles with new parameters.
+    });
   }
 
   loadProfiles(): void {
@@ -47,19 +56,17 @@ export class PersonalityComponent implements OnInit {
       this.nextCursor || undefined,
       this.limit
     ).pipe(
-        catchError(err => {
-          this.error = 'Error fetching personality data';
-          this.loading = false;
-          console.error(err);
-          return of(null);
-        })
-      )
+      catchError(err => {
+        this.error = 'Error fetching personality data';
+        this.loading = false;
+        console.error(err);
+        return of(null);
+      })
+    )
       .subscribe((res: PersonalityResponse | null) => {
         this.loading = false;
         if (res) {
-          // Append the new profiles
           this.profiles = [...this.profiles, ...res.profiles];
-          // Update nextCursor and hasMore flag based on API response
           this.nextCursor = res.cursor?.nextCursor || null;
           this.hasMore = res.more;
         }
@@ -67,7 +74,6 @@ export class PersonalityComponent implements OnInit {
   }
 
   onScroll(): void {
-    // When scrolled near bottom, load the next set of profiles if available
     if (this.hasMore && !this.loading) {
       this.loadProfiles();
     }
