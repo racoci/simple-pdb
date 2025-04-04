@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {NgForOf} from '@angular/common';
+import {NpcSimulationService} from '../npc-simulation/npc-simulation.service';
 
 
 @Component({
@@ -96,7 +97,10 @@ export class ProfileSelectorComponent {
   selectedMbti: string = this.mbtiList[0];
   selectedCategory: string = "";
 
-  constructor(private router: Router) {}
+  constructor(
+    private npcService: NpcSimulationService,
+    private router: Router
+  ) {}
 
   onSubmit() {
     // Build the query parameters.
@@ -107,5 +111,12 @@ export class ProfileSelectorComponent {
 
     // Navigate to the 'personality' route with the selected parameters.
     this.router.navigate(['/personality'], { queryParams });
+  }
+
+  onPersonalityChosen(selectedMbti: string, selectedCategory: string): void {
+    // Add the new NPC to the simulation state
+    this.npcService.addNpc(selectedMbti, selectedCategory);
+    // Navigate back to the simulation view to see the new NPC in the graph
+    this.router.navigate(['/npc-simulation']);
   }
 }
