@@ -1,6 +1,6 @@
 import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
-import { NpcSimulationService, NpcNode } from './npc-simulation.service';
+import { NpcSimulationService, NpcNode } from './services/npc-simulation.service';
 import { Application, Graphics, Text } from 'pixi.js';
 import * as d3 from 'd3';
 
@@ -25,21 +25,17 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {
-      // Dynamically determine the container's dimensions
       const container = this.pixiContainer.nativeElement;
       const width = container.clientWidth;
       const height = container.clientHeight;
-      
-      // Create a new PixiJS Application instance without constructor options
+
       this.pixiApp = new Application();
-      // Initialize the PixiJS Application with dynamic dimensions
       this.pixiApp.init({
         width,
         height,
         backgroundColor: 0x222222
       });
 
-      // Use canvas if available; fallback to view
       const canvasElement = this.pixiApp.canvas || this.pixiApp.view;
       if (canvasElement) {
         container.appendChild(canvasElement);
@@ -48,33 +44,29 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
         console.error('Failed to retrieve Pixi canvas.');
       }
 
-      // Add a listener for window resize events.
       window.addEventListener('resize', this.resizeListener);
 
-      // Initialize the simulation (this creates initial nodes if none exist)
+      // Initialize simulation using ProfileService data.
       this.npcService.initSimulation(width, height);
 
-      // For each node, create a corresponding Pixi Graphics sprite.
+      // (Rendering code for NPC sprites remains the same)
       for (const node of this.npcService.getNodes()) {
         const circle = new Graphics();
         const color = this.getColorForCategory(node.category);
         circle.beginFill(color).drawCircle(0, 0, 15).endFill();
-        
-        // Add a text label for the MBTI code.
+
         const label = new Text(node.mbti, { fontSize: 12, fill: 0xffffff });
         label.anchor.set(0.5);
         label.y = -20;
         circle.addChild(label);
-        
-        // Set the initial position from node data.
+
         circle.x = node.x ?? 0;
         circle.y = node.y ?? 0;
-        
+
         this.pixiApp.stage.addChild(circle);
         this.nodeSprites.set(node.id, circle);
       }
 
-      // Listen for D3 simulation tick events to update sprite positions.
       this.npcService.simulation.on('tick', () => {
         for (const node of this.npcService.getNodes()) {
           const sprite = this.nodeSprites.get(node.id);
@@ -92,10 +84,10 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     const container = this.pixiContainer.nativeElement;
     const newWidth = container.clientWidth;
     const newHeight = container.clientHeight;
-    
+
     // Resize the PixiJS renderer.
     this.pixiApp.renderer.resize(newWidth, newHeight);
-    
+
     // Update the D3 simulation center force.
     if (this.npcService.simulation) {
       const centerForce = this.npcService.simulation.force('center') as d3.ForceCenter<NpcNode>;
@@ -106,7 +98,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       // Reheat the simulation to reflect new dimensions.
       this.npcService.simulation.alpha(1).restart();
     }
-    
+
     console.log(`Resized to: ${newWidth}x${newHeight}`);
   }
 

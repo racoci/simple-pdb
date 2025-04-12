@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {NgForOf} from '@angular/common';
-import {NpcSimulationService} from '../npc-simulation/npc-simulation.service';
+import {NpcSimulationService} from '../npc-simulation/services/npc-simulation.service';
 
 
 @Component({

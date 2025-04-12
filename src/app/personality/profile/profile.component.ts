@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { ProfileResponse } from './models/profile-response.model'; // adjust path as needed
+import { ProfileService } from './services/profile.service'; // Adjust the path accordingly
+import { ProfileResponse } from './models/profile-response.model';
 
 @Component({
   selector: 'app-profile',
@@ -17,23 +17,24 @@ export class ProfileComponent implements OnInit {
   loading: boolean = true;
   error: string = '';
 
-  constructor(private route: ActivatedRoute, private http: HttpClient) { }
+  constructor(
+    private route: ActivatedRoute,
+    private profileService: ProfileService
+  ) {}
 
   ngOnInit(): void {
-    // Expect 'id' to be available; non-null assertion is used
     this.profileId = this.route.snapshot.paramMap.get('id')!;
     this.fetchProfileData();
   }
 
   fetchProfileData(): void {
-    const apiUrl = `/api/v1/profile/${this.profileId}`;
-    this.http.get<ProfileResponse>(apiUrl).subscribe({
+    this.profileService.fetchProfile(this.profileId).subscribe({
       next: (data: ProfileResponse) => {
-        console.log(data);
+        console.log('Fetched profile:', data);
         this.profileData = data;
         this.loading = false;
       },
-      error: (err: any) => {
+      error: (err) => {
         console.error('Error fetching profile:', err);
         this.error = 'There was an error fetching the profile details.';
         this.loading = false;

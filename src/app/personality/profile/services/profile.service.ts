@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ProfileResponse } from '../../models/profile-response.model'; // Adjust the path as needed
+import { ProfileResponse } from '../models/profile-response.model';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -26,6 +26,7 @@ export class ProfileService {
     return this.http.get<ProfileResponse>(apiUrl).pipe(
       tap(profile => {
         // Save the retrieved profile to the local cache.
+        console.log(profile)
         this.profiles.push(profile);
         // Emit the new profiles array.
         this.profilesSubject.next(this.profiles);
@@ -39,8 +40,11 @@ export class ProfileService {
    */
   getRandomProfile(): ProfileResponse | undefined {
     if (this.profiles.length === 0) {
+      console.error('No profiles found.');
       return undefined;
     }
+
+    console.log(this.profiles)
     const randomIndex = Math.floor(Math.random() * this.profiles.length);
     return this.profiles[randomIndex];
   }

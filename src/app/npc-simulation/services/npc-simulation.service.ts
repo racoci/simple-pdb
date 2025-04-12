@@ -1,17 +1,19 @@
 import { Injectable } from '@angular/core';
 import * as d3 from 'd3';
+import { ProfileResponse } from '../../personality/profile/models/profile-response.model';
+import { ProfileService } from '../../personality/profile/services/profile.service';
 
-// Define interfaces for our simulation nodes and links
+// Define interfaces for simulation nodes and links
 export interface NpcNode extends d3.SimulationNodeDatum {
   id: number;
   mbti: string;      // MBTI personality code (e.g., "INTJ")
-  category: string;  // category or group of the personality
+  category: string;  // Category group (e.g., "Analyst", "Diplomat")
 }
 
 interface NpcLink extends d3.SimulationLinkDatum<NpcNode> {
   source: NpcNode;
   target: NpcNode;
-  distance: number;  // desired distance between source and target
+  distance: number;  // desired distance between nodes
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,7 +23,7 @@ export class NpcSimulationService {
   private nextId = 0;
   public simulation!: d3.Simulation<NpcNode, NpcLink>;
 
-  // Predefined list of all 16 MBTI types for convenience
+  // Predefined list of all MBTI types (for fallback)
   private allMbtiTypes: string[] = [
     'INTJ','INTP','ENTJ','ENTP',
     'INFJ','INFP','ENFJ','ENFP',
@@ -29,81 +31,95 @@ export class NpcSimulationService {
     'ISTP','ISFP','ESTP','ESFP'
   ];
 
-  /** Initialize the force simulation with a few random NPCs and set up forces. */
-  initSimulation(width: number, height: number): void {
-    // If no nodes yet, add a few random NPCs to start the simulation
-    if (this.nodes.length === 0) {
-      for (let i = 0; i < 3; i++) {
+  constructor(private profileService: ProfileService) {}
+
+  /**
+   * Initializes the simulation using random profiles from the ProfileService.
+   * If no profile is available, falls back to random MBTI.
+   */
+  initSimulation(width: number, height: number, numProfiles: number = 3): void {
+    // Use ProfileService to attempt to get numProfiles random profiles
+    for (let i = 0; i < numProfiles; i++) {
+      const profile: ProfileResponse | undefined = this.profileService.getRandomProfile();
+      if (profile) {
+        // Use profile data – prefer mbti_type; fallback to mbti_profile.
+        const mbti = profile.mbti_type || profile.mbti_profile;
+        // Use category from profile (or fallback)
+        const category = profile.category || this.getCategoryForType(mbti);
+        this.addNpc(mbti, category);
+      } else {
+        // If no profile available, create a fallback NPC with a random MBTI.
         const type = this.randomMbtiType();
-        const category = this.getCategoryForType(type);
-        this.addNpc(type, category);  // add initial NPCs
+        const cat = this.getCategoryForType(type);
+        this.addNpc(type, cat);
       }
     }
 
-    // Create the D3 force simulation with the current nodes
+    // Create the D3 force simulation with the current nodes.
     this.simulation = d3.forceSimulation<NpcNode, NpcLink>(this.nodes)
-      // Add a charge force for repulsion (negative strength pushes nodes apart)
+      // Repulsion force
       .force('charge', d3.forceManyBody().strength(-50))
-      // Center force to keep the graph centered in the canvas
+      // Centering force
       .force('center', d3.forceCenter(width / 2, height / 2))
-      // Collision force to prevent nodes from overlapping too much (radius ~20)
+      // Collision force so nodes don't overlap.
       .force('collision', d3.forceCollide().radius(20))
-      // Link force to link nodes with distances based on relationship strength
+      // Link force based on relationship strength calculated from MBTI similarity.
       .force('link', d3.forceLink<NpcNode, NpcLink>(this.links)
-        .id(d => d.id)  // specify how to get id from node
+        .id(d => d.id)
         .distance(link => link.distance));
-    // The simulation starts automatically and will emit "tick" events as it runs&#8203;:contentReference[oaicite:3]{index=3}.
   }
 
-  /** Add a new NPC node with given MBTI and category to the simulation. */
+  /** Adds a new NPC node with the given MBTI and category to the simulation. */
   addNpc(mbti: string, category: string): void {
-    // Create a new node object
     const newNode: NpcNode = { id: this.nextId++, mbti, category };
-    // (Optional) initialize the node at a random position near the center
+    // Initialize node position randomly near the center.
     newNode.x = Math.random() * 100 + 50;
     newNode.y = Math.random() * 100 + 50;
 
-    // Create links from the new node to all existing nodes, with distance based on MBTI similarity
+    // Create links from this node to all existing nodes.
     for (const existing of this.nodes) {
       const shared = this.sharedLetters(existing.mbti, mbti);
-      const dist = 200 - 40 * shared;  // closer distance if more letters in common
+      // Determine desired distance: more shared letters means closer nodes.
+      const dist = 200 - 40 * shared;
       this.links.push({ source: newNode, target: existing, distance: dist });
     }
     this.nodes.push(newNode);
 
-    // If the simulation is already running, update it with the new node and links
+    // Update the simulation if it has been started.
     if (this.simulation) {
       this.simulation.nodes(this.nodes);
       const linkForce = this.simulation.force<d3.ForceLink<NpcNode, NpcLink>>('link');
       if (linkForce) {
         linkForce.links(this.links);
       }
-      // "Reheat" the simulation to incorporate the new node
       this.simulation.alpha(1).restart();
     }
   }
 
-  /** Stop the simulation loop to avoid memory leaks (e.g., when component is destroyed). */
+  /** Stops the D3 simulation */
   stopSimulation(): void {
     if (this.simulation) {
-      this.simulation.stop();  // stops the internal timer for the force simulation&#8203;:contentReference[oaicite:4]{index=4}
+      this.simulation.stop();
     }
   }
 
-  /** Get current list of nodes (useful for the component to render them). */
+  /** Returns the list of NPC nodes */
   getNodes(): NpcNode[] {
     return this.nodes;
   }
 
   // --- Helper methods ---
 
-  /** Pick a random MBTI type from the list (for initial NPC generation). */
+  /** Picks a random MBTI type from the list. */
   private randomMbtiType(): string {
     const idx = Math.floor(Math.random() * this.allMbtiTypes.length);
     return this.allMbtiTypes[idx];
   }
 
-  /** Determine category grouping for a given MBTI type (optional, for coloring or grouping). */
+  /**
+   * Determines a category grouping for a given MBTI type for visual purposes.
+   * (Analyst, Diplomat, Sentinel, Explorer)
+   */
   private getCategoryForType(mbti: string): string {
     const analysts = ['INTJ','INTP','ENTJ','ENTP'];
     const diplomats = ['INFJ','INFP','ENFJ','ENFP'];
@@ -116,7 +132,7 @@ export class NpcSimulationService {
     return 'Unknown';
   }
 
-  /** Count how many letters two MBTI codes share (simple similarity metric). */
+  /** Counts how many letters are shared between two MBTI strings. */
   private sharedLetters(typeA: string, typeB: string): number {
     let count = 0;
     for (let i = 0; i < 4; i++) {
