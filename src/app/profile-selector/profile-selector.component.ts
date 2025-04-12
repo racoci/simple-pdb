@@ -7,26 +7,7 @@ import {NpcSimulationService} from '../npc-simulation/npc-simulation.service';
 
 @Component({
   selector: 'app-profile-selector',
-  template: `
-    <form (ngSubmit)="onSubmit()" #selectorForm="ngForm">
-      <div>
-        <label for="mbti">MBTI (mandatory):</label>
-        <select id="mbti" [(ngModel)]="selectedMbti" name="mbti" required>
-          <option *ngFor="let type of mbtiList" [value]="type">{{ type }}</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="category">Category (optional):</label>
-        <select id="category" [(ngModel)]="selectedCategory" name="category">
-          <option value="">None</option>
-          <option *ngFor="let cat of categoryOptions" [value]="cat.value">{{ cat.label }}</option>
-        </select>
-      </div>
-
-      <button type="submit" [disabled]="!selectorForm.form.valid">Submit</button>
-    </form>
-  `,
+  templateUrl: 'profile-selector.component.html',
   imports: [
     FormsModule,
     NgForOf
