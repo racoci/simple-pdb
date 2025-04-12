@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
+import { ProfileResponse } from '../models/profile-response.model';  // Adjust the path if needed
 
 @Component({
   selector: 'app-profile',
@@ -12,7 +13,7 @@ import { CommonModule } from '@angular/common';
 })
 export class ProfileComponent implements OnInit {
   profileId: string = '';  // Initialized to avoid TS2564
-  profileData: any;
+  profileData: ProfileResponse | null = null;
   loading: boolean = true;
   error: string = '';
 
@@ -26,8 +27,10 @@ export class ProfileComponent implements OnInit {
 
   fetchProfileData(): void {
     const apiUrl = `/api/v1/profile/${this.profileId}`;
-    this.http.get(apiUrl).subscribe({
-      next: (data) => {
+    // Use the typed response for better type checking
+    this.http.get<ProfileResponse>(apiUrl).subscribe({
+      next: (data: ProfileResponse) => {
+        console.log(data);
         this.profileData = data;
         this.loading = false;
       },
