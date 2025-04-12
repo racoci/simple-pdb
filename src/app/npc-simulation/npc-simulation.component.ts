@@ -1,18 +1,21 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { NpcSimulationService, NpcNode } from './npc-simulation.service';
 import { Application, Graphics, Text } from 'pixi.js';
+import * as d3 from 'd3';
 
 @Component({
   selector: 'app-npc-simulation',
   templateUrl: './npc-simulation.component.html',
   styleUrls: ['./npc-simulation.component.css']
 })
-export class NpcSimulationComponent implements OnInit, OnDestroy {
+export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   @ViewChild('pixiContainer', { static: true }) pixiContainer!: ElementRef<HTMLDivElement>;
   private pixiApp!: Application;
   // Map of node IDs to Pixi Graphics objects (for updating positions)
   private nodeSprites: Map<number, Graphics> = new Map();
+  // Store the resize listener reference so we can remove it later
+  private resizeListener = this.onResize.bind(this);
 
   constructor(
     private npcService: NpcSimulationService,
@@ -20,49 +23,59 @@ export class NpcSimulationComponent implements OnInit, OnDestroy {
     private router: Router
   ) {}
 
-  ngOnInit(): void {
-    // Run the PixiJS and D3 simulation setup outside Angular's NgZone
+  ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {
-      // Create a PixiJS Application instance without options
+      // Dynamically determine the container's dimensions
+      const container = this.pixiContainer.nativeElement;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      
+      // Create a new PixiJS Application instance without constructor options
       this.pixiApp = new Application();
-
-      // Initialize the application using the new init() method
+      // Initialize the PixiJS Application with dynamic dimensions
       this.pixiApp.init({
-        width: 800,
-        height: 600,
+        width,
+        height,
         backgroundColor: 0x222222
       });
 
-      // Append the canvas (new property in v8) to the container
-      this.pixiContainer.nativeElement.appendChild(this.pixiApp.canvas);
-      console.log('Pixi canvas appended:', this.pixiApp.canvas);
+      // Use canvas if available; fallback to view
+      const canvasElement = this.pixiApp.canvas || this.pixiApp.view;
+      if (canvasElement) {
+        container.appendChild(canvasElement);
+        console.log('Pixi canvas appended:', canvasElement);
+      } else {
+        console.error('Failed to retrieve Pixi canvas.');
+      }
 
-      // Initialize the simulation (this will also create initial nodes if none)
-      this.npcService.initSimulation(800, 600);
+      // Add a listener for window resize events.
+      window.addEventListener('resize', this.resizeListener);
 
-      // Create a Pixi circle (sprite) for each NPC node and add to stage
+      // Initialize the simulation (this creates initial nodes if none exist)
+      this.npcService.initSimulation(width, height);
+
+      // For each node, create a corresponding Pixi Graphics sprite.
       for (const node of this.npcService.getNodes()) {
-        // Create a circle graphic for the NPC
         const circle = new Graphics();
         const color = this.getColorForCategory(node.category);
         circle.beginFill(color).drawCircle(0, 0, 15).endFill();
-        // Add a text label with the MBTI code
+        
+        // Add a text label for the MBTI code.
         const label = new Text(node.mbti, { fontSize: 12, fill: 0xffffff });
         label.anchor.set(0.5);
-        label.y = -20;  // position label above the circle
+        label.y = -20;
         circle.addChild(label);
-        // Set initial position (if node.x, node.y exist)
+        
+        // Set the initial position from node data.
         circle.x = node.x ?? 0;
         circle.y = node.y ?? 0;
-        // Add the circle to the Pixi stage (so it becomes visible)
+        
         this.pixiApp.stage.addChild(circle);
-        // Track this sprite by node id for later updates
         this.nodeSprites.set(node.id, circle);
       }
 
-      // Listen for D3 simulation tick events and update sprite positions on each tick
+      // Listen for D3 simulation tick events to update sprite positions.
       this.npcService.simulation.on('tick', () => {
-        // On every tick, update each sprite's (x, y) from the node's updated position
         for (const node of this.npcService.getNodes()) {
           const sprite = this.nodeSprites.get(node.id);
           if (sprite) {
@@ -71,32 +84,59 @@ export class NpcSimulationComponent implements OnInit, OnDestroy {
           }
         }
       });
-      // PixiJS's internal ticker will redraw the stage at ~60fps.
     });
   }
 
+  private onResize(): void {
+    // Recompute container dimensions on window resize.
+    const container = this.pixiContainer.nativeElement;
+    const newWidth = container.clientWidth;
+    const newHeight = container.clientHeight;
+    
+    // Resize the PixiJS renderer.
+    this.pixiApp.renderer.resize(newWidth, newHeight);
+    
+    // Update the D3 simulation center force.
+    if (this.npcService.simulation) {
+      const centerForce = this.npcService.simulation.force('center') as d3.ForceCenter<NpcNode>;
+      if (centerForce) {
+        centerForce.x(newWidth / 2);
+        centerForce.y(newHeight / 2);
+      }
+      // Reheat the simulation to reflect new dimensions.
+      this.npcService.simulation.alpha(1).restart();
+    }
+    
+    console.log(`Resized to: ${newWidth}x${newHeight}`);
+  }
+
   /** Handler for the "Add NPC" button */
-  addNpc(): void {
-    // Navigate to the personality selector route to choose a new NPC
-    this.router.navigate(['/profile-selector']).then(() => {});
+  addNpc(event: MouseEvent): void {
+    // Navigate to the personality selector route to add a new NPC.
+    // (This route should handle NPC addition and then redirect back.)
+    this.router.navigate(['/profile-selector']).then(() => {
+      console.log('Navigated to profile-selector for adding NPC.');
+    });
   }
 
   ngOnDestroy(): void {
-    // Cleanup: stop the D3 simulation loop and destroy the Pixi application
+    // Remove the resize listener.
+    window.removeEventListener('resize', this.resizeListener);
+    // Cleanup the simulation and destroy the PixiJS application.
     this.npcService.stopSimulation();
     if (this.pixiApp) {
-      this.pixiApp.destroy();  // destroy the PixiJS application and its canvas
+      this.pixiApp.destroy();
     }
   }
 
-  /** Helper to pick a color for a given category (for visual distinction) */
+  /** Helper: returns a color based on NPC category */
   private getColorForCategory(category: string): number {
     switch (category) {
       case 'Analyst':  return 0x1f77b4; // blue
       case 'Diplomat': return 0x2ca02c; // green
       case 'Sentinel': return 0xff7f0e; // orange
       case 'Explorer': return 0xd62728; // red
-      default:         return 0x888888; // gray for unknown/other
+      default:         return 0x888888; // gray for unknown
     }
   }
 }
