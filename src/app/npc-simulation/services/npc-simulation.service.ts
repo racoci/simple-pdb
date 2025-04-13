@@ -10,18 +10,20 @@ export interface NpcNode extends d3.SimulationNodeDatum {
   category: string;  // Category group (e.g., "Analyst", "Diplomat")
 }
 
-interface NpcLink extends d3.SimulationLinkDatum<NpcNode> {
+export interface NpcLink extends d3.SimulationLinkDatum<NpcNode> {
   source: NpcNode;
   target: NpcNode;
   distance: number;  // desired distance between nodes
 }
+
+export interface MySimulation extends d3.Simulation<NpcNode, NpcLink> {}
 
 @Injectable({ providedIn: 'root' })
 export class NpcSimulationService {
   private nodes: NpcNode[] = [];
   private links: NpcLink[] = [];
   private nextId = 0;
-  public simulation!: d3.Simulation<NpcNode, NpcLink>;
+  public simulation!: MySimulation;
 
   // Predefined list of all MBTI types (for fallback)
   private allMbtiTypes: string[] = [
