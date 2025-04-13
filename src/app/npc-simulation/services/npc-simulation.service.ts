@@ -16,14 +16,14 @@ export interface NpcLink extends d3.SimulationLinkDatum<NpcNode> {
   distance: number;  // desired distance between nodes
 }
 
-export interface MySimulation extends d3.Simulation<NpcNode, NpcLink> {}
+export interface NpcSimulation extends d3.Simulation<NpcNode, NpcLink> {}
 
 @Injectable({ providedIn: 'root' })
 export class NpcSimulationService {
   private nodes: NpcNode[] = [];
   private links: NpcLink[] = [];
   private nextId = 0;
-  public simulation!: MySimulation;
+  public simulation!: NpcSimulation;
 
   // Predefined list of all MBTI types (for fallback)
   private allMbtiTypes: string[] = [
