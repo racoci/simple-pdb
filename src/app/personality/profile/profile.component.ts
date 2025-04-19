@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ProfileService } from './services/profile.service'; // Adjust the path accordingly
 import { ProfileResponse } from './models/profile-response.model';
@@ -18,6 +18,7 @@ export class ProfileComponent implements OnInit {
   error: string = '';
 
   constructor(
+    private router: Router,
     private route: ActivatedRoute,
     private profileService: ProfileService
   ) {}
@@ -39,6 +40,12 @@ export class ProfileComponent implements OnInit {
         this.error = 'There was an error fetching the profile details.';
         this.loading = false;
       }
+    });
+  }
+
+  goBackToSimulation(event: MouseEvent): void {
+    this.router.navigate(['/npc-simulation']).then(() => {
+      console.log('Navigated to npc-simulation for adding NPC.');
     });
   }
 }

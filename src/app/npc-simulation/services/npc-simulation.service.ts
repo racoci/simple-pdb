@@ -101,38 +101,6 @@ export class NpcSimulationService {
     return this.nodes;
   }
 
-  private randomMbtiType(): string {
-    const idx = Math.floor(Math.random() * this.allMbtiTypes.length);
-    return this.allMbtiTypes[idx];
-  }
-
-  private getCategoryForType(mbti: string): string {
-    const analysts = ['INTJ','INTP','ENTJ','ENTP'];
-    const diplomats = ['INFJ','INFP','ENFJ','ENFP'];
-    const sentinels = ['ISTJ','ISFJ','ESTJ','ESFJ'];
-    const explorers = ['ISTP','ISFP','ESTP','ESFP'];
-    if (analysts.includes(mbti)) return 'Analyst';
-    if (diplomats.includes(mbti)) return 'Diplomat';
-    if (sentinels.includes(mbti)) return 'Sentinel';
-    if (explorers.includes(mbti)) return 'Explorer';
-    return 'Unknown';
-  }
-
-  private mapProfileCategory(value: string | null | undefined): string {
-    const categories: Record<string, string> = {
-      '1': 'Pop Culture', '2': 'Television', '3': 'Movies', '5': 'Sports', '7': 'Cartoons',
-      '8': 'Anime & Manga', '9': 'Comics', '10': 'Noteworthy', '11': 'Gaming', '12': 'Literature',
-      '13': 'Theatre', '14': 'Musician', '15': 'Internet', '16': 'The Arts', '17': 'Business',
-      '18': 'Religion', '21': 'Science', '22': 'Historical', '26': 'Web Comics',
-      '27': 'Superheroes', '28': 'Philosophy', '29': 'Kpop', '30': 'Traits',
-      '31': 'Plots & Archetypes', '32': 'Concepts', '33': 'Music', '34': 'Franchises',
-      '35': 'Culture', '36': 'Theories', '37': 'Polls (If you...)', '38': 'Your Experience',
-      '39': 'Type Combo (Your Type)', '40': 'Ask Pdb', '41': 'PDB Community',
-      '42': 'Nature', '43': 'Technology'
-    };
-    return (value && categories[value]) || 'Unknown';
-  }
-
   private sharedLetters(typeA: string, typeB: string): number {
     let count = 0;
     for (let i = 0; i < 4; i++) {
