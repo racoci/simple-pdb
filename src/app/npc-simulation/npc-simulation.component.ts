@@ -39,8 +39,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .enter()
           .append('g')
           .attr('class', 'npc-node')
-          .on('click', (_event, d) => {
-            const profile = d.profile
+          .on('click', (_event, node) => {
+            const profile = node.profile;
             if (profile) {
               this.ngZone.run(() => {
                 this.router.navigate(['/profile', profile.id]).then(() => {
@@ -50,15 +50,33 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
             }
           });
 
+        this.nodeElements.append('defs')
+          .append('clipPath')
+          .attr('id', d => `clip-${d.id}`)
+          .append('circle')
+          .attr('r', 15)
+          .attr('cx', 0)
+          .attr('cy', 0);
+
+        this.nodeElements.append('image')
+          .attr('xlink:href', d => d.profile?.profile_image_url ?? '')
+          .attr('x', -15)
+          .attr('y', -15)
+          .attr('width', 30)
+          .attr('height', 30)
+          .attr('clip-path', d => `url(#clip-${d.id})`);
+
         this.nodeElements.append('circle')
           .attr('r', 15)
-          .attr('fill', d => this.getColorForCategory(d.profile?.category ?? d.category));
+          .attr('fill', 'none')
+          .attr('stroke-width', 2)
+          .attr('stroke', d => this.getColorForCategory(d.profile?.category ?? d.category));
 
         this.nodeElements.append('text')
           .text(d => d.profile?.mbti_profile ?? d.mbti)
-          .attr('dy', -20)
+          .attr('dy', -22)
           .attr('text-anchor', 'middle')
-          .attr('fill', '#ffffff')
+          .attr('fill', d => this.getColorForCategory(d.profile?.category ?? d.category))
           .style('font-size', '12px');
 
         this.npcService.simulation.on('tick', () => {
