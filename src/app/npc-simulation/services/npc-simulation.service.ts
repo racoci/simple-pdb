@@ -5,12 +5,7 @@ import { ProfileService } from '../../personality/profile/services/profile.servi
 import { forkJoin, of, Subject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
-export interface NpcNode extends d3.SimulationNodeDatum {
-  id: number;
-  mbti: string;
-  category: string;
-  profile?: ProfileResponse;
-}
+export interface NpcNode extends d3.SimulationNodeDatum, ProfileResponse {}
 
 export interface NpcLink extends d3.SimulationLinkDatum<NpcNode> {
   source: NpcNode;
@@ -43,9 +38,7 @@ export class NpcSimulationService {
       this.profileService.getRandomProfile().pipe(
         map(profile => {
           if (profile && profile.mbti_type) {
-            const mbti = profile.mbti_type?.split(" ")[0] || profile.mbti_profile;
-            const category = this.mapProfileCategory(profile.category);
-            return { mbti, category, profile };
+            return profile ;
           } else {
             return null;
           }
@@ -55,9 +48,10 @@ export class NpcSimulationService {
     );
 
     forkJoin(profileRequests).subscribe(results => {
-      const validResults = results.filter((result): result is { mbti: string; category: string; profile: ProfileResponse } => !!result);
-      for (const result of validResults) {
-        this.addNpc(result.mbti, result.category, result.profile);
+      for (const result of results) {
+        if (result) {
+          this.addNpc(result);
+        }
       }
 
       // Only create the simulation if there are valid nodes
@@ -65,7 +59,7 @@ export class NpcSimulationService {
         this.simulation =     d3.forceSimulation<NpcNode, NpcLink>(this.nodes)
           .force('charge',    d3.forceManyBody().strength(-50))
           .force('center',    d3.forceCenter(width / 2, height / 2))
-          .force('collision', d3.forceCollide().radius(20))
+          .force('collision', d3.forceCollide().radius(40))
           .force('link',      d3.forceLink<NpcNode, NpcLink>(this.links)
             .id(d => d.id)
             .distance(link => link.distance));
@@ -75,13 +69,13 @@ export class NpcSimulationService {
     });
   }
 
-  addNpc(mbti: string, category: string, profile?: ProfileResponse): void {
-    const newNode: NpcNode = { id: this.nextId++, mbti, category, profile };
+  addNpc( profile: ProfileResponse): void {
+    const newNode: NpcNode = { ...profile };
     newNode.x = Math.random() * 100 + 50;
     newNode.y = Math.random() * 100 + 50;
 
     for (const existing of this.nodes) {
-      const shared = this.sharedLetters(existing.mbti, mbti);
+      const shared = this.sharedLetters(existing.mbti_type, profile.mbti_type);
       const dist = 200 - 40 * shared;
       this.links.push({ source: newNode, target: existing, distance: dist });
     }

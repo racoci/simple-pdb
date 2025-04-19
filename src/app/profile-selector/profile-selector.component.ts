@@ -79,7 +79,6 @@ export class ProfileSelectorComponent {
   selectedCategory: string = "";
 
   constructor(
-    private npcService: NpcSimulationService,
     private router: Router
   ) {}
 
@@ -91,13 +90,6 @@ export class ProfileSelectorComponent {
     }
 
     // Navigate to the 'personality' route with the selected parameters.
-    this.router.navigate(['/personality'], { queryParams });
-  }
-
-  onPersonalityChosen(selectedMbti: string, selectedCategory: string): void {
-    // Add the new NPC to the simulation state
-    this.npcService.addNpc(selectedMbti, selectedCategory);
-    // Navigate back to the simulation view to see the new NPC in the graph
-    this.router.navigate(['/npc-simulation']);
+    this.router.navigate(['/personality'], {queryParams}).then(() => {});
   }
 }

@@ -40,7 +40,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .append('g')
           .attr('class', 'npc-node')
           .on('click', (_event, node) => {
-            const profile = node.profile;
+            const profile = node;
             if (profile) {
               this.ngZone.run(() => {
                 this.router.navigate(['/profile', profile.id]).then(() => {
@@ -59,7 +59,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .attr('cy', 0);
 
         this.nodeElements.append('image')
-          .attr('xlink:href', d => d.profile?.profile_image_url ?? '')
+          .attr('xlink:href', d => d.profile_image_url ?? '')
           .attr('x', -15)
           .attr('y', -15)
           .attr('width', 30)
@@ -70,13 +70,13 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .attr('r', 15)
           .attr('fill', 'none')
           .attr('stroke-width', 2)
-          .attr('stroke', d => this.getColorForCategory(d.profile?.category ?? d.category));
+          .attr('stroke', d => this.getColorForCategory(d.category));
 
         this.nodeElements.append('text')
-          .text(d => d.profile?.mbti_profile ?? d.mbti)
+          .text(d => d.mbti_profile)
           .attr('dy', -22)
           .attr('text-anchor', 'middle')
-          .attr('fill', d => this.getColorForCategory(d.profile?.category ?? d.category))
+          .attr('fill', d => this.getColorForCategory(d.category))
           .style('font-size', '12px');
 
         this.npcService.simulation.on('tick', () => {
