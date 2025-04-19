@@ -39,10 +39,11 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .enter()
           .append('g')
           .attr('class', 'npc-node')
-          .on('click', d => {
-            if (d.profile) {
+          .on('click', (_event, d) => {
+            const profile = d.profile
+            if (profile) {
               this.ngZone.run(() => {
-                this.router.navigate(['/profile', d.profile.id]).then(() => {
+                this.router.navigate(['/profile', profile.id]).then(() => {
                   console.log('Profile clicked');
                 });
               });
