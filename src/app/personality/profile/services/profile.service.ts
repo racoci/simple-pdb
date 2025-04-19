@@ -38,14 +38,8 @@ export class ProfileService {
    * Get a random profile from the cached profiles.
    * Returns undefined if no profiles have been fetched yet.
    */
-  getRandomProfile(): ProfileResponse | undefined {
-    if (this.profiles.length === 0) {
-      console.error('No profiles found.');
-      return undefined;
-    }
-
-    console.log(this.profiles)
-    const randomIndex = Math.floor(Math.random() * this.profiles.length);
-    return this.profiles[randomIndex];
+  getRandomProfile(): Observable<ProfileResponse> {
+    const randomId = Math.floor(Math.random() * 67999)
+    return this.fetchProfile(`${randomId}`)
   }
 }
