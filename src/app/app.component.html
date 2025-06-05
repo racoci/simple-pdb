@@ -1,4 +1,15 @@
-<nav>
-  <a routerLink="/personality">Personality Profiles</a>
-</nav>
-<router-outlet/>
+<div class="app-container">
+  <div class="main-content">
+    <nav>
+      <!-- Keep nav minimal for now, focus on simulation -->
+      <a routerLink="/npc-simulation">NPC Simulation</a>
+    </nav>
+    <router-outlet/>
+  </div>
+  <div class="sidebar" [class.open]="isSidebarOpen">
+    <!-- Sidebar content will be loaded here -->
+    <button class="close-btn" (click)="closeSidebar()">&times;</button>
+    <app-profile *ngIf="selectedProfileId" [profileIdInput]="selectedProfileId"></app-profile>
+  </div>
+</div>
+

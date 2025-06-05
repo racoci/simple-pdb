@@ -1,7 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, Input, OnChanges, SimpleChanges } from '@angular/core'; // Added Input, OnChanges, SimpleChanges
 import { CommonModule } from '@angular/common';
-import { ProfileService } from './services/profile.service'; // Adjust the path accordingly
+import { ProfileService } from './services/profile.service';
 import { ProfileResponse } from './models/profile-response.model';
 
 @Component({
@@ -11,41 +10,54 @@ import { ProfileResponse } from './models/profile-response.model';
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css']
 })
-export class ProfileComponent implements OnInit {
-  profileId: string = '';
+export class ProfileComponent implements OnInit, OnChanges { // Implement OnChanges
+  @Input() profileIdInput: string | null = null; // Input property instead of reading from route
   profileData: ProfileResponse | null = null;
-  loading: boolean = true;
+  loading: boolean = false; // Start as false, set true during fetch
   error: string = '';
 
   constructor(
-    private router: Router,
-    private route: ActivatedRoute,
+    // Removed Router and ActivatedRoute as ID comes via Input
     private profileService: ProfileService
   ) {}
 
   ngOnInit(): void {
-    this.profileId = this.route.snapshot.paramMap.get('id')!;
-    this.fetchProfileData();
+    // Initial fetch if ID is provided on init
+    if (this.profileIdInput) {
+       this.fetchProfileData(this.profileIdInput);
+    }
   }
 
-  fetchProfileData(): void {
-    this.profileService.fetchProfile(this.profileId).subscribe({
+  ngOnChanges(changes: SimpleChanges): void {
+    // Detect changes to the input property and fetch data
+    if (changes['profileIdInput'] && changes['profileIdInput'].currentValue) {
+      this.fetchProfileData(changes['profileIdInput'].currentValue);
+    } else if (changes['profileIdInput'] && !changes['profileIdInput'].currentValue) {
+      // Clear data if input becomes null (sidebar closes or selection changes)
+      this.profileData = null;
+      this.loading = false;
+      this.error = '';
+    }
+  }
+
+  fetchProfileData(profileId: string): void {
+    this.loading = true; // Set loading true when fetching
+    this.error = ''; // Clear previous errors
+    this.profileData = null; // Clear previous data
+    this.profileService.fetchProfile(profileId).subscribe({
       next: (data: ProfileResponse) => {
-        console.log('Fetched profile:', data);
+        console.log('Fetched profile for sidebar:', data);
         this.profileData = data;
         this.loading = false;
       },
       error: (err) => {
-        console.error('Error fetching profile:', err);
+        console.error('Error fetching profile for sidebar:', err);
         this.error = 'There was an error fetching the profile details.';
         this.loading = false;
       }
     });
   }
 
-  goBackToSimulation(event: MouseEvent): void {
-    this.router.navigate(['/npc-simulation']).then(() => {
-      console.log('Navigated to npc-simulation for adding NPC.');
-    });
-  }
+  // Removed goBackToSimulation method as sidebar has its own close mechanism
 }
+

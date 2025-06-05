@@ -7,9 +7,13 @@
 </div>
 
 <div *ngIf="profileData">
-  <h2>{{ profileData.mbti_profile }}</h2>
-  <img *ngIf="profileData.profile_image_url" [src]="profileData.profile_image_url" alt="{{ profileData.mbti_profile }}">
+  <h2>{{ profileData.profile_name_searchable }}</h2> <!-- Changed from mbti_profile for better display -->
+  <img *ngIf="profileData.profile_image_url" [src]="profileData.profile_image_url" alt="{{ profileData.profile_name_searchable }}" style="max-width: 100px; height: auto; margin-bottom: 10px;">
+  <p><strong>MBTI:</strong> {{ profileData.mbti_profile }}</p>
+  <p><strong>Category:</strong> {{ profileData.category }}</p>
+  <p><strong>Subcategory:</strong> {{ profileData.subcategory }}</p>
   <div [innerHTML]="profileData.wiki_description_html"></div>
   <!-- Add more fields as needed -->
 </div>
-<button (click)="goBackToSimulation($event)">Back to Simulation</button>
+<!-- Removed the Back to Simulation button -->
+

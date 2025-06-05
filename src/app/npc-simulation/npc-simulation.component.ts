@@ -1,7 +1,8 @@
 import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
-import { Router } from '@angular/router';
+// Removed Router import as it's no longer used for profile navigation
 import * as d3 from 'd3';
 import { NpcNode, NpcSimulationService } from './services/npc-simulation.service';
+import { UiStateService } from '../shared/ui-state.service'; // Corrected import path
 
 @Component({
   selector: 'app-npc-simulation',
@@ -10,11 +11,11 @@ import { NpcNode, NpcSimulationService } from './services/npc-simulation.service
 })
 export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   @ViewChild('svgContainer', { static: true }) svgContainer!: ElementRef<SVGSVGElement>;
-  @ViewChild('tooltip', { static: true }) tooltipElement!: ElementRef<HTMLDivElement>; // Reference to tooltip div
+  @ViewChild('tooltip', { static: true }) tooltipElement!: ElementRef<HTMLDivElement>;
 
   private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private nodeElements!: d3.Selection<SVGGElement, NpcNode, SVGSVGElement, unknown>;
-  private tooltip!: d3.Selection<HTMLDivElement, unknown, null, undefined>; // D3 selection for tooltip
+  private tooltip!: d3.Selection<HTMLDivElement, unknown, null, undefined>;
 
   private width: number = 0;
   private height: number = 0;
@@ -23,13 +24,14 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   constructor(
     private npcService: NpcSimulationService,
     private ngZone: NgZone,
-    private router: Router
+    private uiStateService: UiStateService // Inject UiStateService
+    // Removed Router from constructor
   ) {}
 
   ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {
       this.svg = d3.select(this.svgContainer.nativeElement);
-      this.tooltip = d3.select(this.tooltipElement.nativeElement); // Initialize tooltip selection
+      this.tooltip = d3.select(this.tooltipElement.nativeElement);
       this.width = this.svgContainer.nativeElement.clientWidth;
       this.height = this.svgContainer.nativeElement.clientHeight;
       this.svg.attr('width', this.width).attr('height', this.height);
@@ -37,35 +39,32 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       this.npcService.simulationReady$.subscribe(() => {
         const nodes = this.npcService.getNodes();
 
-        this.nodeElements = this.svg.selectAll<SVGGElement, NpcNode>('g.npc-node') // Select existing or new nodes
+        this.nodeElements = this.svg.selectAll<SVGGElement, NpcNode>('g.npc-node')
           .data(nodes, (d: NpcNode) => String(d.id))
           .join(
             enter => {
               const g = enter.append('g')
                 .attr('class', 'npc-node')
-                .attr('transform', d => `translate(${d.x ?? this.width / 2}, ${d.y ?? this.height / 2})`) // Initial position
+                .attr('transform', d => `translate(${d.x ?? this.width / 2}, ${d.y ?? this.height / 2})`)
                 .on('click', (event, node) => {
                   const profile = node;
                   if (profile) {
                     this.ngZone.run(() => {
-                      // Use profile_name_searchable for logging
-                      this.router.navigate(['/profile', profile.id]).then(() => {
-                        console.log('Profile clicked:', profile.profile_name_searchable);
-                      });
+                      // Use UiStateService to select the profile, triggering the sidebar
+                      this.uiStateService.selectProfile(String(profile.id));
+                      console.log('Profile selected for sidebar:', profile.profile_name_searchable);
                     });
                   }
                 })
-                // --- Tooltip Events --- 
                 .on('mouseover', (event, d) => {
                   this.tooltip.transition().duration(200).style('opacity', .9);
                   this.tooltip.html(
-                    // Use profile_name_searchable for tooltip display
                     `<strong>${d.profile_name_searchable}</strong><br/>` +
                     `MBTI: ${d.mbti_profile}<br/>` +
                     `Signal: ${d.signal ?? 'N/A'}<br/>` +
                     `Influence: ${d.influence ?? 'N/A'}`
                   )
-                  .style('left', (event.pageX + 15) + 'px') // Position tooltip near mouse
+                  .style('left', (event.pageX + 15) + 'px')
                   .style('top', (event.pageY - 28) + 'px');
                 })
                 .on('mousemove', (event) => {
@@ -75,7 +74,6 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
                 .on('mouseout', () => {
                   this.tooltip.transition().duration(500).style('opacity', 0);
                 });
-                // --- End Tooltip Events ---
 
               g.append('defs')
                 .append('clipPath')
@@ -108,17 +106,14 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
               return g;
             },
-            update => update, // No specific update needed here for now
-            exit => exit.remove() // Remove nodes that are no longer present
+            update => update,
+            exit => exit.remove()
           );
 
         this.npcService.simulation.on('tick', () => {
-          // Update positions using the selection
           this.nodeElements.attr('transform', (d: any) =>
             `translate(${d.x}, ${d.y})`
           );
-          // Update links if they are drawn (not shown in provided code, but important)
-          // this.linkElements?.attr(...) 
         });
       });
 
@@ -145,12 +140,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   }
 
   addNpc(event: MouseEvent): void {
-    // This navigation seems incorrect based on the README. 
-    // It should likely trigger adding a profile, not navigating away.
-    // Keeping as is for now, but should be revisited for Feature 4: Graph Controls.
-    this.router.navigate(['/profile-selector']).then(() => {
-      console.log('Navigated to profile-selector for adding NPC.');
-    });
+    // This button's functionality needs to be defined as part of Feature 4: Graph Controls
+    console.log('Add NPC button clicked - functionality pending.');
+    // Example: Trigger a modal or navigate to a selection component
   }
 
   ngOnDestroy(): void {
@@ -161,7 +153,6 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   }
 
   private getColorForCategory(category: string): string {
-    // Using a simplified color map for brevity, original map is preserved
     const colorMap: { [key: string]: string } = {
       'Pop Culture': '#a6cee3', 'Television': '#1f78b4', 'Movies': '#b2df8a',
       'Sports': '#33a02c', 'Cartoons': '#fb9a99', 'Anime & Manga': '#e31a1c',
@@ -177,7 +168,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       'Ask Pdb': '#e5c494', 'PDB Community': '#b3b3b3', 'Nature': '#a1d99b',
       'Technology': '#9ecae1'
     };
-    return colorMap[category] || '#888888'; // Default color
+    return colorMap[category] || '#888888';
   }
 }
 
