@@ -1,7 +1,8 @@
 import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
-import { Router } from '@angular/router';
+// Removed Router import as it's no longer used for profile navigation
 import * as d3 from 'd3';
-import {NpcNode, NpcSimulationService} from './services/npc-simulation.service';
+import { NpcNode, NpcSimulationService } from './services/npc-simulation.service';
+import { UiStateService } from '../shared/ui-state.service'; // Corrected import path
 
 @Component({
   selector: 'app-npc-simulation',
@@ -10,9 +11,11 @@ import {NpcNode, NpcSimulationService} from './services/npc-simulation.service';
 })
 export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   @ViewChild('svgContainer', { static: true }) svgContainer!: ElementRef<SVGSVGElement>;
+  @ViewChild('tooltip', { static: true }) tooltipElement!: ElementRef<HTMLDivElement>;
 
   private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private nodeElements!: d3.Selection<SVGGElement, NpcNode, SVGSVGElement, unknown>;
+  private tooltip!: d3.Selection<HTMLDivElement, unknown, null, undefined>;
 
   private width: number = 0;
   private height: number = 0;
@@ -21,12 +24,14 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   constructor(
     private npcService: NpcSimulationService,
     private ngZone: NgZone,
-    private router: Router
+    private uiStateService: UiStateService // Inject UiStateService
+    // Removed Router from constructor
   ) {}
 
   ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {
       this.svg = d3.select(this.svgContainer.nativeElement);
+      this.tooltip = d3.select(this.tooltipElement.nativeElement);
       this.width = this.svgContainer.nativeElement.clientWidth;
       this.height = this.svgContainer.nativeElement.clientHeight;
       this.svg.attr('width', this.width).attr('height', this.height);
@@ -34,50 +39,76 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       this.npcService.simulationReady$.subscribe(() => {
         const nodes = this.npcService.getNodes();
 
-        this.nodeElements = this.svg.selectAll<SVGGElement, NpcNode>('g')
+        this.nodeElements = this.svg.selectAll<SVGGElement, NpcNode>('g.npc-node')
           .data(nodes, (d: NpcNode) => String(d.id))
-          .enter()
-          .append('g')
-          .attr('class', 'npc-node')
-          .on('click', (_event, node) => {
-            const profile = node;
-            if (profile) {
-              this.ngZone.run(() => {
-                this.router.navigate(['/profile', profile.id]).then(() => {
-                  console.log('Profile clicked');
+          .join(
+            enter => {
+              const g = enter.append('g')
+                .attr('class', 'npc-node')
+                .attr('transform', d => `translate(${d.x ?? this.width / 2}, ${d.y ?? this.height / 2})`)
+                .on('click', (event, node) => {
+                  const profile = node;
+                  if (profile) {
+                    this.ngZone.run(() => {
+                      // Use UiStateService to select the profile, triggering the sidebar
+                      this.uiStateService.selectProfile(String(profile.id));
+                      console.log('Profile selected for sidebar:', profile.profile_name_searchable);
+                    });
+                  }
+                })
+                .on('mouseover', (event, d) => {
+                  this.tooltip.transition().duration(200).style('opacity', .9);
+                  this.tooltip.html(
+                    `<strong>${d.profile_name_searchable}</strong><br/>` +
+                    `MBTI: ${d.mbti_profile}<br/>` +
+                    `Signal: ${d.signal ?? 'N/A'}<br/>` +
+                    `Influence: ${d.influence ?? 'N/A'}`
+                  )
+                  .style('left', (event.pageX + 15) + 'px')
+                  .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mousemove', (event) => {
+                   this.tooltip.style('left', (event.pageX + 15) + 'px')
+                              .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', () => {
+                  this.tooltip.transition().duration(500).style('opacity', 0);
                 });
-              });
-            }
-          });
 
-        this.nodeElements.append('defs')
-          .append('clipPath')
-          .attr('id', d => `clip-${d.id}`)
-          .append('circle')
-          .attr('r', 15)
-          .attr('cx', 0)
-          .attr('cy', 0);
+              g.append('defs')
+                .append('clipPath')
+                .attr('id', d => `clip-${d.id}`)
+                .append('circle')
+                .attr('r', 15)
+                .attr('cx', 0)
+                .attr('cy', 0);
 
-        this.nodeElements.append('image')
-          .attr('xlink:href', d => d.profile_image_url ?? '')
-          .attr('x', -15)
-          .attr('y', -15)
-          .attr('width', 30)
-          .attr('height', 30)
-          .attr('clip-path', d => `url(#clip-${d.id})`);
+              g.append('image')
+                .attr('xlink:href', d => d.profile_image_url ?? '')
+                .attr('x', -15)
+                .attr('y', -15)
+                .attr('width', 30)
+                .attr('height', 30)
+                .attr('clip-path', d => `url(#clip-${d.id})`);
 
-        this.nodeElements.append('circle')
-          .attr('r', 15)
-          .attr('fill', 'none')
-          .attr('stroke-width', 2)
-          .attr('stroke', d => this.getColorForCategory(d.category));
+              g.append('circle')
+                .attr('r', 15)
+                .attr('fill', 'none')
+                .attr('stroke-width', 2)
+                .attr('stroke', d => this.getColorForCategory(d.category));
 
-        this.nodeElements.append('text')
-          .text(d => d.mbti_profile)
-          .attr('dy', -22)
-          .attr('text-anchor', 'middle')
-          .attr('fill', d => this.getColorForCategory(d.category))
-          .style('font-size', '12px');
+              g.append('text')
+                .text(d => d.mbti_profile)
+                .attr('dy', -22)
+                .attr('text-anchor', 'middle')
+                .attr('fill', d => this.getColorForCategory(d.category))
+                .style('font-size', '12px');
+
+              return g;
+            },
+            update => update,
+            exit => exit.remove()
+          );
 
         this.npcService.simulation.on('tick', () => {
           this.nodeElements.attr('transform', (d: any) =>
@@ -109,9 +140,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   }
 
   addNpc(event: MouseEvent): void {
-    this.router.navigate(['/profile-selector']).then(() => {
-      console.log('Navigated to profile-selector for adding NPC.');
-    });
+    // This button's functionality needs to be defined as part of Feature 4: Graph Controls
+    console.log('Add NPC button clicked - functionality pending.');
+    // Example: Trigger a modal or navigate to a selection component
   }
 
   ngOnDestroy(): void {
@@ -122,44 +153,22 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   }
 
   private getColorForCategory(category: string): string {
-    switch (category) {
-      case 'Pop Culture': return '#a6cee3';
-      case 'Television': return '#1f78b4';
-      case 'Movies': return '#b2df8a';
-      case 'Sports': return '#33a02c';
-      case 'Cartoons': return '#fb9a99';
-      case 'Anime & Manga': return '#e31a1c';
-      case 'Comics': return '#fdbf6f';
-      case 'Noteworthy': return '#ff7f00';
-      case 'Gaming': return '#cab2d6';
-      case 'Literature': return '#6a3d9a';
-      case 'Theatre': return '#ffff99';
-      case 'Musician': return '#b15928';
-      case 'Internet': return '#8dd3c7';
-      case 'The Arts': return '#ffffb3';
-      case 'Business': return '#bebada';
-      case 'Religion': return '#fb8072';
-      case 'Science': return '#80b1d3';
-      case 'Historical': return '#fdb462';
-      case 'Web Comics': return '#b3de69';
-      case 'Superheroes': return '#fccde5';
-      case 'Philosophy': return '#d9d9d9';
-      case 'Kpop': return '#bc80bd';
-      case 'Traits': return '#ccebc5';
-      case 'Plots & Archetypes': return '#ffed6f';
-      case 'Concepts': return '#d8b365';
-      case 'Music': return '#5ab4ac';
-      case 'Franchises': return '#66c2a5';
-      case 'Culture': return '#fc8d62';
-      case 'Theories': return '#8da0cb';
-      case 'Polls (If you...)': return '#e78ac3';
-      case 'Your Experience': return '#a6d854';
-      case 'Type Combo (Your Type)': return '#ffd92f';
-      case 'Ask Pdb': return '#e5c494';
-      case 'PDB Community': return '#b3b3b3';
-      case 'Nature': return '#a1d99b';
-      case 'Technology': return '#9ecae1';
-      default: return '#888888';
-    }
+    const colorMap: { [key: string]: string } = {
+      'Pop Culture': '#a6cee3', 'Television': '#1f78b4', 'Movies': '#b2df8a',
+      'Sports': '#33a02c', 'Cartoons': '#fb9a99', 'Anime & Manga': '#e31a1c',
+      'Comics': '#fdbf6f', 'Noteworthy': '#ff7f00', 'Gaming': '#cab2d6',
+      'Literature': '#6a3d9a', 'Theatre': '#ffff99', 'Musician': '#b15928',
+      'Internet': '#8dd3c7', 'The Arts': '#ffffb3', 'Business': '#bebada',
+      'Religion': '#fb8072', 'Science': '#80b1d3', 'Historical': '#fdb462',
+      'Web Comics': '#b3de69', 'Superheroes': '#fccde5', 'Philosophy': '#d9d9d9',
+      'Kpop': '#bc80bd', 'Traits': '#ccebc5', 'Plots & Archetypes': '#ffed6f',
+      'Concepts': '#d8b365', 'Music': '#5ab4ac', 'Franchises': '#66c2a5',
+      'Culture': '#fc8d62', 'Theories': '#8da0cb', 'Polls (If you...)': '#e78ac3',
+      'Your Experience': '#a6d854', 'Type Combo (Your Type)': '#ffd92f',
+      'Ask Pdb': '#e5c494', 'PDB Community': '#b3b3b3', 'Nature': '#a1d99b',
+      'Technology': '#9ecae1'
+    };
+    return colorMap[category] || '#888888';
   }
 }
+

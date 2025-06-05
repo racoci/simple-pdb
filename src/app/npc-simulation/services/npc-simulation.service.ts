@@ -5,7 +5,11 @@ import { ProfileService } from '../../personality/profile/services/profile.servi
 import { forkJoin, of, Subject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
-export interface NpcNode extends d3.SimulationNodeDatum, ProfileResponse {}
+// Added signal and influence properties as placeholders based on README requirements
+export interface NpcNode extends d3.SimulationNodeDatum, ProfileResponse {
+  signal?: number;      // Placeholder for signal
+  influence?: number;   // Placeholder for influence
+}
 
 export interface NpcLink extends d3.SimulationLinkDatum<NpcNode> {
   source: NpcNode;
@@ -38,7 +42,9 @@ export class NpcSimulationService {
       this.profileService.getRandomProfile().pipe(
         map(profile => {
           if (profile && profile.mbti_type) {
-            return profile ;
+            // Add placeholder values for signal and influence
+            const node: NpcNode = { ...profile, signal: 0, influence: 0 };
+            return node;
           } else {
             return null;
           }
@@ -48,20 +54,26 @@ export class NpcSimulationService {
     );
 
     forkJoin(profileRequests).subscribe(results => {
-      for (const result of results) {
-        if (result) {
-          this.addNpc(result);
+      this.nodes = results.filter(node => node !== null) as NpcNode[]; // Filter out nulls and assign
+
+      // Generate links between all valid nodes
+      this.links = [];
+      for (let i = 0; i < this.nodes.length; i++) {
+        for (let j = i + 1; j < this.nodes.length; j++) {
+          const shared = this.sharedLetters(this.nodes[i].mbti_type, this.nodes[j].mbti_type);
+          const dist = 200 - 40 * shared;
+          this.links.push({ source: this.nodes[i], target: this.nodes[j], distance: dist });
         }
       }
 
       // Only create the simulation if there are valid nodes
       if (this.nodes.length > 0) {
-        this.simulation =     d3.forceSimulation<NpcNode, NpcLink>(this.nodes)
-          .force('charge',    d3.forceManyBody().strength(-50))
-          .force('center',    d3.forceCenter(width / 2, height / 2))
+        this.simulation = d3.forceSimulation<NpcNode, NpcLink>(this.nodes)
+          .force('charge', d3.forceManyBody().strength(-50))
+          .force('center', d3.forceCenter(width / 2, height / 2))
           .force('collision', d3.forceCollide().radius(40))
-          .force('link',      d3.forceLink<NpcNode, NpcLink>(this.links)
-            .id(d => d.id)
+          .force('link', d3.forceLink<NpcNode, NpcLink>(this.links)
+            .id(d => String(d.id)) // Ensure ID is string for d3
             .distance(link => link.distance));
 
         this.simulationReady$.next();
@@ -69,13 +81,15 @@ export class NpcSimulationService {
     });
   }
 
-  addNpc( profile: ProfileResponse): void {
-    const newNode: NpcNode = { ...profile };
+  // Modified addNpc to handle potential future additions correctly
+  addNpc(profile: ProfileResponse): void {
+    const newNode: NpcNode = { ...profile, signal: 0, influence: 0 }; // Add placeholders
     newNode.x = Math.random() * 100 + 50;
     newNode.y = Math.random() * 100 + 50;
 
+    // Create links to existing nodes
     for (const existing of this.nodes) {
-      const shared = this.sharedLetters(existing.mbti_type, profile.mbti_type);
+      const shared = this.sharedLetters(existing.mbti_type, newNode.mbti_type);
       const dist = 200 - 40 * shared;
       this.links.push({ source: newNode, target: existing, distance: dist });
     }
@@ -103,9 +117,11 @@ export class NpcSimulationService {
 
   private sharedLetters(typeA: string, typeB: string): number {
     let count = 0;
+    if (!typeA || !typeB) return 0; // Guard against undefined types
     for (let i = 0; i < 4; i++) {
       if (typeA[i] === typeB[i]) count++;
     }
     return count;
   }
 }
+
