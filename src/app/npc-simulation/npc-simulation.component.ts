@@ -75,38 +75,57 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
                   this.tooltip.transition().duration(500).style('opacity', 0);
                 });
 
+              const nodeRadius = 15; // Define radius for consistency
+
               g.append('defs')
                 .append('clipPath')
                 .attr('id', d => `clip-${d.id}`)
                 .append('circle')
-                .attr('r', 15)
+                .attr('r', nodeRadius)
                 .attr('cx', 0)
                 .attr('cy', 0);
 
               g.append('image')
                 .attr('xlink:href', d => d.profile_image_url ?? '')
-                .attr('x', -15)
-                .attr('y', -15)
-                .attr('width', 30)
-                .attr('height', 30)
-                .attr('clip-path', d => `url(#clip-${d.id})`);
+                .attr('x', -nodeRadius)
+                .attr('y', -nodeRadius)
+                .attr('width', nodeRadius * 2)
+                .attr('height', nodeRadius * 2)
+                .attr('clip-path', d => `url(#clip-${d.id})`)
+                // Add preserveAspectRatio for pixel-perfect cropping
+                .attr('preserveAspectRatio', 'xMidYMid slice');
 
-              g.append('circle')
-                .attr('r', 15)
+              g.append('circle') // Border circle
+                .attr('r', nodeRadius)
                 .attr('fill', 'none')
                 .attr('stroke-width', 2)
                 .attr('stroke', d => this.getColorForCategory(d.category));
 
-              g.append('text')
+              g.append('text') // Label text
                 .text(d => d.mbti_profile)
-                .attr('dy', -22)
+                .attr('dy', -(nodeRadius + 7)) // Position above the circle border
                 .attr('text-anchor', 'middle')
                 .attr('fill', d => this.getColorForCategory(d.category))
-                .style('font-size', '12px');
+                .style('font-size', '12px')
+                .style('paint-order', 'stroke') // Ensure text is readable over lines
+                .style('stroke', '#1a1a1a') // Dark background color for halo
+                .style('stroke-width', '3px')
+                .style('stroke-linecap', 'round')
+                .style('stroke-linejoin', 'round');
 
               return g;
             },
-            update => update,
+            update => {
+              // Potentially update existing elements if needed, e.g., image URL
+              update.select('image')
+                    .attr('xlink:href', d => d.profile_image_url ?? '');
+              update.select('circle.border') // Assuming border circle has class 'border'
+                    .attr('stroke', d => this.getColorForCategory(d.category));
+              update.select('text')
+                    .text(d => d.mbti_profile)
+                    .attr('fill', d => this.getColorForCategory(d.category));
+              return update;
+            },
             exit => exit.remove()
           );
 
@@ -114,6 +133,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           this.nodeElements.attr('transform', (d: any) =>
             `translate(${d.x}, ${d.y})`
           );
+          // Need to add link updates here as well if links are drawn
         });
       });
 
