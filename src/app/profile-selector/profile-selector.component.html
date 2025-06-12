@@ -16,3 +16,14 @@
 
   <button type="submit" [disabled]="!selectorForm.form.valid">Submit</button>
 </form>
+
+<div class="search">
+  <input type="text" [(ngModel)]="searchTerm" (input)="onSearchTermChange()" placeholder="Search characters" name="search" />
+</div>
+
+<ul *ngIf="searchResults.length > 0" class="search-results">
+  <li *ngFor="let result of searchResults">
+    {{ result.profile_name_searchable || result.mbti_profile }}
+    <button (click)="goToProfile(result.id)">View</button>
+  </li>
+</ul>

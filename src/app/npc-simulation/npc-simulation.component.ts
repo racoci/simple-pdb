@@ -6,6 +6,7 @@ import * as d3 from 'd3';
 import {NpcNode, NpcSimulationService} from './services/npc-simulation.service';
 import {ProfileService} from '../personality/profile/services/profile.service';
 import {ProfileResponse} from '../personality/profile/models/profile-response.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-npc-simulation',
@@ -26,6 +27,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
   searchTerm = '';
   searchResults: ProfileResponse[] = [];
+  private searchSub?: Subscription;
 
   constructor(
     private npcService: NpcSimulationService,
@@ -124,13 +126,33 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  onSearchTermChange(): void {
+    this.filterNodes();
+    this.search();
+  }
+
+  filterNodes(): void {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!this.nodeElements) {
+      return;
+    }
+    this.nodeElements.style('display', d => {
+      const mbti = d.mbti_profile?.toLowerCase() || '';
+      const name = d.profile_name_searchable?.toLowerCase() || '';
+      return mbti.includes(term) || name.includes(term) ? null : 'none';
+    });
+  }
+
   search(): void {
     const term = this.searchTerm.trim();
+    if (this.searchSub) {
+      this.searchSub.unsubscribe();
+    }
     if (!term) {
       this.searchResults = [];
       return;
     }
-    this.profileService.searchProfiles(term).subscribe(results => {
+    this.searchSub = this.profileService.searchProfiles(term).subscribe(results => {
       this.searchResults = results;
     });
   }
@@ -143,6 +165,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     window.removeEventListener('resize', this.resizeListener);
+    if (this.searchSub) {
+      this.searchSub.unsubscribe();
+    }
     if (this.npcService.simulation) {
       this.npcService.stopSimulation();
     }

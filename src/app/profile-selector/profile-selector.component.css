@@ -12,3 +12,22 @@ label {
     margin-bottom: 0.5rem;
     color: #f0f0f0;
 }
+
+.search {
+    margin-top: 1rem;
+}
+
+.search-results {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+}
+
+.search-results li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}

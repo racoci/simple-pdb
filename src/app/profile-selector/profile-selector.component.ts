@@ -1,16 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import {FormsModule} from '@angular/forms';
-import {NgForOf} from '@angular/common';
-import {NpcSimulationService} from '../npc-simulation/services/npc-simulation.service';
+import {NgForOf, NgIf} from '@angular/common';
+import {ProfileService} from '../personality/profile/services/profile.service';
+import {ProfileResponse} from '../personality/profile/models/profile-response.model';
 
 
 @Component({
   selector: 'app-profile-selector',
+  standalone: true,
   templateUrl: 'profile-selector.component.html',
   imports: [
     FormsModule,
-    NgForOf
+    NgForOf,
+    NgIf
   ],
   styles: [
     `
@@ -30,7 +33,7 @@ import {NpcSimulationService} from '../npc-simulation/services/npc-simulation.se
     `
   ]
 })
-export class ProfileSelectorComponent {
+export class ProfileSelectorComponent implements OnInit {
   mbtiList: string[] = [
     'ISTJ','ESTJ','ISFJ','ESFJ','ESFP','ISFP','ESTP','ISTP',
     'INFJ','ENFJ','INFP','ENFP','INTP','ENTP','INTJ','ENTJ'
@@ -77,10 +80,22 @@ export class ProfileSelectorComponent {
 
   selectedMbti: string = this.mbtiList[0];
   selectedCategory: string = "";
+  searchTerm = '';
+  searchResults: ProfileResponse[] = [];
 
   constructor(
-    private router: Router
+    private router: Router,
+    private profileService: ProfileService
   ) {}
+
+  ngOnInit(): void {
+    this.onSearchTermChange();
+  }
+
+  onSearchTermChange(): void {
+    this.profileService.searchProfiles(this.searchTerm)
+      .subscribe(results => this.searchResults = results);
+  }
 
   onSubmit() {
     // Build the query parameters.
@@ -91,5 +106,9 @@ export class ProfileSelectorComponent {
 
     // Navigate to the 'personality' route with the selected parameters.
     this.router.navigate(['/personality'], {queryParams}).then(() => {});
+  }
+
+  goToProfile(id: number): void {
+    this.router.navigate(['/profile', id]);
   }
 }
