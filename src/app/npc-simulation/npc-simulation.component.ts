@@ -24,6 +24,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   private zoomBehavior!: d3.ZoomBehavior<SVGSVGElement, unknown>;
   private nodeElements!: d3.Selection<SVGGElement, NpcNode, SVGGElement, unknown>;
 
+  private readonly bubbleRadius = 25;
+
   private width: number = 0;
   private height: number = 0;
   private resizeListener = this.onResize.bind(this);
@@ -78,27 +80,55 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .append('clipPath')
           .attr('id', d => `clip-${d.id}`)
           .append('circle')
-          .attr('r', 15)
+          .attr('r', this.bubbleRadius)
           .attr('cx', 0)
           .attr('cy', 0);
 
         this.nodeElements.append('image')
           .attr('xlink:href', d => d.profile_image_url ?? '')
-          .attr('x', -15)
-          .attr('y', -15)
-          .attr('width', 30)
-          .attr('height', 30)
+          .attr('x', -this.bubbleRadius)
+          .attr('y', -this.bubbleRadius)
+          .attr('width', this.bubbleRadius * 2)
+          .attr('height', this.bubbleRadius * 2)
           .attr('clip-path', d => `url(#clip-${d.id})`);
 
         this.nodeElements.append('circle')
-          .attr('r', 15)
+          .attr('r', this.bubbleRadius)
           .attr('fill', 'none')
           .attr('stroke-width', 2)
           .attr('stroke', d => this.getColorForCategory(d.category));
 
+        this.nodeElements.append('path')
+          .attr('id', d => `arc-top-${d.id}`)
+          .attr('d', `M -${this.bubbleRadius},0 A ${this.bubbleRadius} ${this.bubbleRadius} 0 0 1 ${this.bubbleRadius},0`)
+          .attr('fill', 'none');
+
+        this.nodeElements.append('path')
+          .attr('id', d => `arc-bottom-${d.id}`)
+          .attr('d', `M ${this.bubbleRadius},0 A ${this.bubbleRadius} ${this.bubbleRadius} 0 0 1 -${this.bubbleRadius},0`)
+          .attr('fill', 'none');
+
+        this.nodeElements.append('text')
+          .attr('class', 'name-top')
+          .append('textPath')
+          .attr('xlink:href', d => `#arc-top-${d.id}`)
+          .attr('startOffset', '50%')
+          .style('text-anchor', 'middle')
+          .text(d => this.splitName(d.profile_name_searchable)[0])
+          .attr('fill', d => this.getColorForCategory(d.category));
+
+        this.nodeElements.append('text')
+          .attr('class', 'name-bottom')
+          .append('textPath')
+          .attr('xlink:href', d => `#arc-bottom-${d.id}`)
+          .attr('startOffset', '50%')
+          .style('text-anchor', 'middle')
+          .text(d => this.splitName(d.profile_name_searchable)[1])
+          .attr('fill', d => this.getColorForCategory(d.category));
+
         this.nodeElements.append('text')
           .text(d => d.mbti_profile)
-          .attr('dy', -22)
+          .attr('dy', -(this.bubbleRadius + 7))
           .attr('text-anchor', 'middle')
           .attr('fill', d => this.getColorForCategory(d.category))
           .style('font-size', '12px');
@@ -107,6 +137,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           this.nodeElements.attr('transform', (d: any) =>
             `translate(${d.x}, ${d.y})`
           );
+          this.adjustFontSize();
         });
       });
 
@@ -306,5 +337,33 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       case 'Technology': return '#9ecae1';
       default: return '#888888';
     }
+  }
+
+  private splitName(name: string = ''): [string, string] {
+    if (!name) {
+      return ['', ''];
+    }
+    const parts = name.split(' ');
+    if (parts.length > 1) {
+      const mid = Math.ceil(parts.length / 2);
+      const top = parts.slice(0, mid).join(' ');
+      const bottom = parts.slice(mid).join(' ');
+      return [top, bottom];
+    }
+    if (name.length <= 12) {
+      return [name, ''];
+    }
+    const half = Math.ceil(name.length / 2);
+    return [name.slice(0, half), name.slice(half)];
+  }
+
+  private adjustFontSize(): void {
+    const min = 8;
+    const max = 12;
+    this.nodeElements.each((d, i, nodes) => {
+      const dist = Math.min(d.x ?? 0, this.width - (d.x ?? 0));
+      const size = dist < 50 ? min + ((max - min) * dist) / 50 : max;
+      d3.select(nodes[i]).selectAll('text').style('font-size', `${size}px`);
+    });
   }
 }

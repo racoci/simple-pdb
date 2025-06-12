@@ -59,7 +59,8 @@ export class NpcSimulationService {
         this.simulation =     d3.forceSimulation<NpcNode, NpcLink>(this.nodes)
           .force('charge',    d3.forceManyBody().strength(-50))
           .force('center',    d3.forceCenter(width / 2, height / 2))
-          .force('collision', d3.forceCollide().radius(40))
+          // Increased collision radius to account for larger node size
+          .force('collision', d3.forceCollide().radius(60))
           .force('link',      d3.forceLink<NpcNode, NpcLink>(this.links)
             .id(d => d.id)
             .distance(link => link.distance));
