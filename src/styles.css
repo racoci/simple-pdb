@@ -1,1 +1,30 @@
-/* You can add global styles to this file, and also import other style files */
+/* Base dark theme styles */
+body {
+  margin: 0;
+  background-color: #121212;
+  color: #f0f0f0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+a {
+  color: #64b5f6;
+}
+
+nav {
+  background-color: #1f1f1f;
+  padding: 1rem;
+}
+
+button,
+select,
+input {
+  background-color: #2c2c2c;
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+}
+
+button:hover {
+  background-color: #3a3a3a;
+}
