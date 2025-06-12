@@ -4,6 +4,8 @@ export interface ProfileResponse {
   id: number;
   property_id: number;
   mbti_profile: string;
+  /** Display name with original capitalization */
+  profile_name?: string;
   profile_name_searchable: string;
   allow_commenting: boolean;
   allow_voting: boolean;
