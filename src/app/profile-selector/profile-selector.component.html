@@ -1,15 +1,15 @@
 <div class="selector-container">
-  <form (ngSubmit)="onSubmit()" #selectorForm="ngForm">
-    <div>
+  <form (ngSubmit)="onSubmit()" #selectorForm="ngForm" class="options-form">
+    <div class="option">
       <label for="mbti">MBTI (mandatory):</label>
-      <select id="mbti" [(ngModel)]="selectedMbti" name="mbti" required>
+      <select id="mbti" [(ngModel)]="selectedMbti" name="mbti" (change)="onFilterChange()" required>
         <option *ngFor="let type of mbtiList" [value]="type">{{ type }}</option>
       </select>
     </div>
 
-    <div>
+    <div class="option">
       <label for="category">Category (optional):</label>
-      <select id="category" [(ngModel)]="selectedCategory" name="category">
+      <select id="category" [(ngModel)]="selectedCategory" name="category" (change)="onFilterChange()">
         <option value="">None</option>
         <option *ngFor="let cat of categoryOptions" [value]="cat.value">{{ cat.label }}</option>
       </select>
@@ -18,13 +18,17 @@
     <button type="submit" [disabled]="!selectorForm.form.valid">Submit</button>
   </form>
 
-  <div class="search">
-    <input type="text" [(ngModel)]="searchTerm" (input)="onSearchTermChange()" placeholder="Search characters" name="search" />
-  </div>
+  <input
+    class="search"
+    type="text"
+    [(ngModel)]="searchTerm"
+    (input)="onSearchTermChange()"
+    placeholder="Search characters"
+    name="search" />
 
-  <ul *ngIf="searchResults.length > 0" class="search-results">
-    <li *ngFor="let result of searchResults">
-      {{ result.profile_name_searchable || result.mbti_profile }}
+  <ul *ngIf="filteredProfiles.length > 0" class="search-results">
+    <li *ngFor="let result of filteredProfiles">
+      {{ result.mbti_profile }}
       <button (click)="goToProfile(result.id)">View</button>
     </li>
   </ul>

@@ -5,14 +5,18 @@
     margin-top: 2rem;
 }
 
-form {
+.options-form {
     display: flex;
-    flex-direction: column;
-    max-width: 300px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 600px;
 }
 
-form div {
-    margin-bottom: 1rem;
+.options-form .option {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.5rem;
 }
 
 label {

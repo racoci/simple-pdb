@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {NgForOf, NgIf} from '@angular/common';
-import {ProfileService} from '../personality/profile/services/profile.service';
-import {ProfileResponse} from '../personality/profile/models/profile-response.model';
+import {PersonalityService} from '../personality/services/personality.service';
+import {Profile} from '../personality/models/personality-response.model';
 
 
 @Component({
@@ -66,20 +66,43 @@ export class ProfileSelectorComponent implements OnInit {
   selectedMbti: string = this.mbtiList[0];
   selectedCategory: string = "";
   searchTerm = '';
-  searchResults: ProfileResponse[] = [];
+  profiles: Profile[] = [];
+  filteredProfiles: Profile[] = [];
 
   constructor(
     private router: Router,
-    private profileService: ProfileService
+    private personalityService: PersonalityService
   ) {}
 
   ngOnInit(): void {
-    this.onSearchTermChange();
+    this.loadProfiles();
   }
 
   onSearchTermChange(): void {
-    this.profileService.searchProfiles(this.searchTerm)
-      .subscribe(results => this.searchResults = results);
+    this.filterProfiles();
+  }
+
+  onFilterChange(): void {
+    this.loadProfiles();
+  }
+
+  loadProfiles(): void {
+    this.personalityService.getMbtiCharacters(
+      this.selectedMbti,
+      this.selectedCategory ? +this.selectedCategory : undefined,
+      undefined,
+      50
+    ).subscribe(res => {
+      this.profiles = res.profiles;
+      this.filterProfiles();
+    });
+  }
+
+  private filterProfiles(): void {
+    const term = this.searchTerm.trim().toLowerCase();
+    this.filteredProfiles = this.profiles.filter(p =>
+      p.mbti_profile.toLowerCase().includes(term)
+    );
   }
 
   onSubmit() {
