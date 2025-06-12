@@ -20,7 +20,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   @ViewChild('svgContainer', { static: true }) svgContainer!: ElementRef<SVGSVGElement>;
 
   private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-  private nodeElements!: d3.Selection<SVGGElement, NpcNode, SVGSVGElement, unknown>;
+  private zoomGroup!: d3.Selection<SVGGElement, unknown, null, undefined>;
+  private zoomBehavior!: d3.ZoomBehavior<SVGSVGElement, unknown>;
+  private nodeElements!: d3.Selection<SVGGElement, NpcNode, SVGGElement, unknown>;
 
   private width: number = 0;
   private height: number = 0;
@@ -44,10 +46,19 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       this.height = this.svgContainer.nativeElement.clientHeight;
       this.svg.attr('width', this.width).attr('height', this.height);
 
+      this.zoomGroup = this.svg.append('g');
+      this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.5, 5])
+        .on('zoom', (event) => {
+          this.zoomGroup.attr('transform', event.transform);
+        });
+
+      this.svg.call(this.zoomBehavior as any);
+
       this.npcService.simulationReady$.subscribe(() => {
         const nodes = this.npcService.getNodes();
 
-        this.nodeElements = this.svg.selectAll<SVGGElement, NpcNode>('g')
+        this.nodeElements = this.zoomGroup.selectAll<SVGGElement, NpcNode>('g')
           .data(nodes, (d: NpcNode) => String(d.id))
           .enter()
           .append('g')
@@ -118,6 +129,18 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
         centerForce.y(newHeight / 2);
       }
       this.npcService.simulation.alpha(1).restart();
+    }
+  }
+
+  zoomIn(): void {
+    if (this.zoomBehavior) {
+      this.svg.transition().call(this.zoomBehavior.scaleBy as any, 1.2);
+    }
+  }
+
+  zoomOut(): void {
+    if (this.zoomBehavior) {
+      this.svg.transition().call(this.zoomBehavior.scaleBy as any, 0.8);
     }
   }
 
