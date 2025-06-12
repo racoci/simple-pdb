@@ -162,9 +162,3 @@ export interface SourceLocation {
 export interface Posts {
   posts: any[];
 }
-
-export interface MbtiLetterStat {
-  type: string;
-  percentage: string;
-  PercentageFloat: number;
-}
