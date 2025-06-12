@@ -19,7 +19,7 @@ export interface SearchResponseCursor {
 export interface SearchResponseProfile {
   id: string;
   name: string;
-  image: {
+  image ?: {
     picURL: string;
   };
   catIcon: {

@@ -62,7 +62,7 @@ export class ProfileService {
    */
   searchCharacters(
     query: string,
-    limit = 1000,
+    limit = 100,
     nextCursor: number | string = 0,
     catID: PdbCategory = PdbCategory.None
   ): Observable<SearchResponse> {

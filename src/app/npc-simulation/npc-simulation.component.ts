@@ -197,7 +197,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       mbti_vote_id: 0,
       is_watching: false,
       image_exists: true,
-      profile_image_url: profile.image.picURL,
+      profile_image_url: profile.image?.picURL,
       profile_image_credit: '',
       profile_image_credit_id: 0,
       profile_image_credit_type: '',

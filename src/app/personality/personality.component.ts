@@ -25,10 +25,10 @@ export class PersonalityComponent implements OnInit {
   hasMore = true;
 
   // Default values can be overridden by query parameters.
-  private mbti = 'ENTJ';
+  private mbti: string | null = null;
   private category: PdbCategory = PdbCategory.None;
   private query: string | null = null;
-  private limit = 50;
+  private limit = 100;
 
   constructor(
     private personalityService: PersonalityService,
@@ -40,7 +40,7 @@ export class PersonalityComponent implements OnInit {
   ngOnInit(): void {
     // Subscribe to query parameters.
     this.route.queryParams.subscribe(params => {
-      this.mbti = params['mbti'] || this.mbti;
+      this.mbti = params['mbti'];
       this.category = params['category'] ? +params['category'] as PdbCategory : this.category;
       this.query = params['query'] || null;
       this.profiles = [];
@@ -57,6 +57,7 @@ export class PersonalityComponent implements OnInit {
 
     this.loading = true;
     if (this.query) {
+
       this.profileService.searchCharacters(
         this.query,
         this.limit,
@@ -70,35 +71,40 @@ export class PersonalityComponent implements OnInit {
           return of(null);
         })
       )
-        .subscribe(res => {
+        .subscribe(searchResponse => {
           this.loading = false;
-          if (res) {
-            const filtered = res.data.results.filter(p => {
+          if (searchResponse && searchResponse.data && searchResponse.data.count != 0) {
+            const filtered = searchResponse.data.results.filter(p => {
               if (!this.mbti) { return true; }
               const mbti = p.personalities.find(per => per.system === 'Four Letter')?.personality;
-              return mbti?.toLowerCase() === this.mbti.toLowerCase();
-            }).map(p => ({
-              id: +p.id,
-              cat_id: +p.categoryID,
-              comment_count: p.commentCount,
-              mbti_profile: p.personalities.find(per => per.system === 'Four Letter')?.personality || '',
-              personality_type: '',
-              profile_id: +p.id,
-              profile_image_url: p.image.picURL,
-              sub_cat_id: +p.subcatID,
-              subcategory: p.subcategory,
-              vote_count: p.voteCount,
-              has_voted: false,
-              top_analysis: { type: '', id: '', content: '', functionList: null }
-            } as Profile));
+              return mbti?.toLowerCase() === this.mbti?.toLowerCase();
+            }).map(p => {
+              const mbti = p.personalities.find(per => per.system === 'Four Letter')?.personality || "";
+              const enneagram = p.personalities.find(per => per.system === "Enneagram")?.personality || "";
+              return ({
+                id: +p.id,
+                cat_id: +p.categoryID,
+                comment_count: p.commentCount,
+                mbti_profile: p.name,
+                personality_type: `${mbti} ${enneagram}`,
+                profile_id: +p.id,
+                profile_image_url: p.image?.picURL,
+                sub_cat_id: +p.subcatID,
+                subcategory: p.subcategory,
+                vote_count: p.voteCount,
+                has_voted: false,
+                top_analysis: {type: '', id: '', content: '', functionList: null}
+              } as Profile);
+            });
+            console.log("Filtered: ", filtered);
             this.profiles = [...this.profiles, ...filtered];
-            this.nextCursor = res.data.cursor.nextCursor || null;
-            this.hasMore = !!res.data.cursor.nextCursor;
+            this.nextCursor = searchResponse.data.cursor.nextCursor || null;
+            this.hasMore = !!searchResponse.data.cursor.nextCursor;
           }
         });
     } else {
       this.personalityService.getMbtiCharacters(
-        this.mbti,
+        this.mbti || "INTP",
         this.category,
         this.nextCursor || undefined,
         this.limit
@@ -113,6 +119,7 @@ export class PersonalityComponent implements OnInit {
         .subscribe(res => {
           this.loading = false;
           if (res) {
+            console.log(res.profiles)
             this.profiles = [...this.profiles, ...res.profiles];
             this.nextCursor = res.cursor?.nextCursor || null;
             this.hasMore = res.more;

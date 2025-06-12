@@ -15,7 +15,7 @@ export interface Profile {
   mbti_profile: string
   personality_type: string
   profile_id: number
-  profile_image_url: string
+  profile_image_url: string | null
   sub_cat_id: number
   subcategory: string
   vote_count: number
