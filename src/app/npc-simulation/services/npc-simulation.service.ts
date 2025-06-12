@@ -72,6 +72,12 @@ export class NpcSimulationService {
 
   addNpc( profile: ProfileResponse): void {
     const newNode: NpcNode = { ...profile };
+    if (!newNode.profile_name && newNode.profile_name_searchable) {
+      newNode.profile_name = newNode.profile_name_searchable;
+    }
+    if (!newNode.profile_name_searchable && newNode.profile_name) {
+      newNode.profile_name_searchable = newNode.profile_name.toLowerCase();
+    }
     newNode.x = Math.random() * 100 + 50;
     newNode.y = Math.random() * 100 + 50;
 

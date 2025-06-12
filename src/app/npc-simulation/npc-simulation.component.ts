@@ -25,6 +25,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   private nodeElements!: d3.Selection<SVGGElement, NpcNode, SVGGElement, unknown>;
 
   private readonly bubbleRadius = 25;
+  private readonly nameMargin = 4;
 
   private width: number = 0;
   private height: number = 0;
@@ -100,12 +101,12 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
         this.nodeElements.append('path')
           .attr('id', d => `arc-top-${d.id}`)
-          .attr('d', `M -${this.bubbleRadius},0 A ${this.bubbleRadius} ${this.bubbleRadius} 0 0 1 ${this.bubbleRadius},0`)
+          .attr('d', this.makeArcPath(true))
           .attr('fill', 'none');
 
         this.nodeElements.append('path')
           .attr('id', d => `arc-bottom-${d.id}`)
-          .attr('d', `M ${this.bubbleRadius},0 A ${this.bubbleRadius} ${this.bubbleRadius} 0 0 1 -${this.bubbleRadius},0`)
+          .attr('d', this.makeArcPath(false))
           .attr('fill', 'none');
 
         this.nodeElements.append('text')
@@ -114,7 +115,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .attr('xlink:href', d => `#arc-top-${d.id}`)
           .attr('startOffset', '50%')
           .style('text-anchor', 'middle')
-          .text(d => this.splitName(d.profile_name_searchable)[0])
+          .text(d => this.splitName(d.profile_name || d.profile_name_searchable)[0])
           .attr('fill', d => this.getColorForCategory(d.category));
 
         this.nodeElements.append('text')
@@ -123,7 +124,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .attr('xlink:href', d => `#arc-bottom-${d.id}`)
           .attr('startOffset', '50%')
           .style('text-anchor', 'middle')
-          .text(d => this.splitName(d.profile_name_searchable)[1])
+          .text(d => this.splitName(d.profile_name || d.profile_name_searchable)[1])
           .attr('fill', d => this.getColorForCategory(d.category));
 
         this.nodeElements.append('text')
@@ -218,7 +219,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       id: +profile.id,
       property_id: 0,
       mbti_profile: profile.personalities.find(p => p.system === 'Four Letter')?.personality || '',
-      profile_name_searchable: profile.name,
+      profile_name: profile.name,
+      profile_name_searchable: profile.name.toLowerCase(),
       allow_commenting: true,
       allow_voting: profile.allowVoting,
       user_id: 0,
@@ -365,5 +367,11 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       const size = dist < 50 ? min + ((max - min) * dist) / 50 : max;
       d3.select(nodes[i]).selectAll('text').style('font-size', `${size}px`);
     });
+  }
+
+  private makeArcPath(isTop: boolean): string {
+    const r = this.bubbleRadius + this.nameMargin;
+    const sweep = isTop ? 0 : 1;
+    return `M -${r},0 A ${r} ${r} 0 0 ${sweep} ${r},0`;
   }
 }
