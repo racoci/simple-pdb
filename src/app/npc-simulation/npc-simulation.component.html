@@ -1,5 +1,9 @@
 <div class="simulation-wrapper">
   <svg #svgContainer class="simulation-canvas"></svg>
+  <div class="zoom-controls">
+    <button class="zoom-btn" (click)="zoomIn()">+</button>
+    <button class="zoom-btn" (click)="zoomOut()">-</button>
+  </div>
   <div class="controls">
     <button (click)="addNpc($event)">Add NPC</button>
     <input type="text" [(ngModel)]="searchTerm" (input)="onSearchTermChange()" (keyup.enter)="search()" placeholder="Search characters" />
