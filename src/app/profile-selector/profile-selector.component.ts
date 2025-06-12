@@ -4,6 +4,7 @@ import {FormsModule} from '@angular/forms';
 import {NgForOf, NgIf} from '@angular/common';
 import {PersonalityService} from '../personality/services/personality.service';
 import {Profile} from '../personality/models/personality-response.model';
+import {SuggestionService, PdbCategory} from '../personality/profile/services/suggestion.service';
 
 
 @Component({
@@ -68,10 +69,12 @@ export class ProfileSelectorComponent implements OnInit {
   searchTerm = '';
   profiles: Profile[] = [];
   filteredProfiles: Profile[] = [];
+  suggestions: { id: string; name: string }[] = [];
 
   constructor(
     private router: Router,
-    private personalityService: PersonalityService
+    private personalityService: PersonalityService,
+    private suggestionService: SuggestionService
   ) {}
 
   ngOnInit(): void {
@@ -80,6 +83,7 @@ export class ProfileSelectorComponent implements OnInit {
 
   onSearchTermChange(): void {
     this.filterProfiles();
+    this.loadSuggestions();
   }
 
   onFilterChange(): void {
@@ -95,6 +99,22 @@ export class ProfileSelectorComponent implements OnInit {
     ).subscribe(res => {
       this.profiles = res.profiles;
       this.filterProfiles();
+    });
+  }
+
+  loadSuggestions(): void {
+    const term = this.searchTerm.trim();
+    if (!term) {
+      this.suggestions = [];
+      return;
+    }
+
+    this.suggestionService.getSuggestions(term, {
+      category: this.selectedCategory ? +this.selectedCategory as PdbCategory : undefined
+    }).subscribe(res => {
+      this.suggestions = res.data.results
+        .filter(r => r.type === 'profile' && r.profile)
+        .map(r => ({ id: r.profile!.id, name: r.profile!.name }));
     });
   }
 
