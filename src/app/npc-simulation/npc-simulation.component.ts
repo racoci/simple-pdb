@@ -1,10 +1,16 @@
 import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import * as d3 from 'd3';
 import {NpcNode, NpcSimulationService} from './services/npc-simulation.service';
+import {ProfileService} from '../personality/profile/services/profile.service';
+import {ProfileResponse} from '../personality/profile/models/profile-response.model';
 
 @Component({
   selector: 'app-npc-simulation',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './npc-simulation.component.html',
   styleUrls: ['./npc-simulation.component.css']
 })
@@ -18,8 +24,12 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   private height: number = 0;
   private resizeListener = this.onResize.bind(this);
 
+  searchTerm = '';
+  searchResults: ProfileResponse[] = [];
+
   constructor(
     private npcService: NpcSimulationService,
+    private profileService: ProfileService,
     private ngZone: NgZone,
     private router: Router
   ) {}
@@ -112,6 +122,23 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     this.router.navigate(['/profile-selector']).then(() => {
       console.log('Navigated to profile-selector for adding NPC.');
     });
+  }
+
+  search(): void {
+    const term = this.searchTerm.trim();
+    if (!term) {
+      this.searchResults = [];
+      return;
+    }
+    this.profileService.searchProfiles(term).subscribe(results => {
+      this.searchResults = results;
+    });
+  }
+
+  addSearchedProfile(profile: ProfileResponse): void {
+    this.npcService.addNpc(profile);
+    this.searchResults = [];
+    this.searchTerm = '';
   }
 
   ngOnDestroy(): void {

@@ -1,2 +1,13 @@
 <svg #svgContainer style="width: 100%; height: 80vh;"></svg>
-<button (click)="addNpc($event)">Add NPC</button>
+<div class="controls">
+  <button (click)="addNpc($event)">Add NPC</button>
+  <input type="text" [(ngModel)]="searchTerm" (keyup.enter)="search()" placeholder="Search characters" />
+  <button (click)="search()">Search</button>
+</div>
+
+<ul *ngIf="searchResults.length > 0" class="search-results">
+  <li *ngFor="let result of searchResults">
+    {{ result.profile_name_searchable || result.mbti_profile }}
+    <button (click)="addSearchedProfile(result)">Add</button>
+  </li>
+</ul>

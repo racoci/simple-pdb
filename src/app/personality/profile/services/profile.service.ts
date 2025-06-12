@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { ProfileResponse } from '../models/profile-response.model';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { tap, map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -41,5 +41,16 @@ export class ProfileService {
   getRandomProfile(): Observable<ProfileResponse> {
     const randomId = Math.floor(Math.random() * 67999)
     return this.fetchProfile(`${randomId}`)
+  }
+
+  /**
+   * Search profiles by name.
+   * Returns an array of matching profiles from the API.
+   */
+  searchProfiles(query: string): Observable<ProfileResponse[]> {
+    const apiUrl = `/api/v1/profiles/search`;
+    const params = new HttpParams().set('query', query);
+    return this.http.get<{ profiles: ProfileResponse[] }>(apiUrl, { params })
+      .pipe(map(res => res.profiles || []));
   }
 }
