@@ -6,6 +6,7 @@ import * as d3 from 'd3';
 import {NpcNode, NpcSimulationService} from './services/npc-simulation.service';
 import {ProfileService} from '../personality/profile/services/profile.service';
 import {ProfileResponse} from '../personality/profile/models/profile-response.model';
+import {SearchResponseProfile} from '../personality/profile/models/search-response.model';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -26,7 +27,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   private resizeListener = this.onResize.bind(this);
 
   searchTerm = '';
-  searchResults: ProfileResponse[] = [];
+  searchResults: SearchResponseProfile[] = [];
   private searchSub?: Subscription;
 
   constructor(
@@ -152,13 +153,75 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       this.searchResults = [];
       return;
     }
-    this.searchSub = this.profileService.searchProfiles(term).subscribe(results => {
-      this.searchResults = results;
+    this.searchSub = this.profileService.searchCharacters(term).subscribe(res => {
+      this.searchResults = res.data.results;
     });
   }
 
-  addSearchedProfile(profile: ProfileResponse): void {
-    this.npcService.addNpc(profile);
+  addSearchedProfile(profile: SearchResponseProfile): void {
+    // Map minimal fields into the ProfileResponse format expected by the simulation service
+    const mapped: ProfileResponse = {
+      id: +profile.id,
+      property_id: 0,
+      mbti_profile: profile.personalities.find(p => p.system === 'Four Letter')?.personality || '',
+      profile_name_searchable: profile.name,
+      allow_commenting: true,
+      allow_voting: profile.allowVoting,
+      user_id: 0,
+      contributor: '',
+      contributor_create_date: '',
+      contributor_pic_path: '',
+      display_order: 0,
+      edit_lock: 0,
+      edit_lock_picture: 0,
+      is_active: true,
+      is_approved: true,
+      mbti_enneagram_type: '',
+      mbti_type: profile.personalities.find(p => p.system === 'Four Letter')?.personality || '',
+      pdb_comment_access: false,
+      pdb_page_owner: 0,
+      pdb_public_access: true,
+      wiki_description: '',
+      wiki_description_html: '',
+      watch_count: 0,
+      comment_count: profile.commentCount,
+      vote_count: profile.voteCount,
+      vote_count_enneagram: 0,
+      vote_count_mbti: 0,
+      total_vote_counts: 0,
+      personality_type: '',
+      type_updated_date: '',
+      enneagram_vote: '',
+      enneagram_vote_id: 0,
+      mbti_vote: '',
+      mbti_vote_id: 0,
+      is_watching: false,
+      image_exists: true,
+      profile_image_url: profile.image.picURL,
+      profile_image_credit: '',
+      profile_image_credit_id: 0,
+      profile_image_credit_type: '',
+      profile_image_credit_url: '',
+      alt_subcategory: '',
+      related_subcategories: '',
+      cat_id: +profile.categoryID,
+      category: '',
+      category_is_fictional: false,
+      sub_cat_id: +profile.subcatID,
+      subcategory: profile.subcategory,
+      subcat_link_info: { sub_cat_id: 0, cat_id: 0, property_id: 0, subcategory: '' },
+      related_subcat_link_info: [],
+      related_profiles: [],
+      functions: [],
+      systems: [],
+      breakdown_systems: {},
+      breakdown_config: { expand: {}, fire: {} },
+      mbti_letter_stats: [],
+      topic_info: { can_generate: false, topic: { description: '', follow_count: 0, post_count: 0, topic_id: 0, topic_name: '', id: 0, is_following: false, is_join_pending: false, is_banned: false, is_moderated: false, name_readable: '', source_profile_id: 0, source_type: '', join_to_post: false, can_pin: false, related_topics: [] }, topic_image_url: '', source_location: { cid: 0, pid: 0, sub_cat_id: 0 }, can_post_image: false, can_post_audio: false, posts: { posts: [] } },
+      self_reported_mbti: null,
+    } as ProfileResponse;
+
+    this.npcService.addNpc(mapped);
     this.searchResults = [];
     this.searchTerm = '';
   }

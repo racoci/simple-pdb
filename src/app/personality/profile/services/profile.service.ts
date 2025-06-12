@@ -3,6 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { ProfileResponse } from '../models/profile-response.model';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap, map } from 'rxjs/operators';
+import { SearchResponse } from '../models/search-response.model';
+import { PdbCategory } from '../models/pdb-category.enum';
 
 @Injectable({
   providedIn: 'root'
@@ -52,5 +54,21 @@ export class ProfileService {
     const params = new HttpParams().set('query', query);
     return this.http.get<{ profiles: ProfileResponse[] }>(apiUrl, { params })
       .pipe(map(res => res.profiles || []));
+  }
+
+  /**
+   * Search characters using the v2 search endpoint.
+   * All parameters except the query are optional.
+   */
+  searchCharacters(query: string, limit = 10, nextCursor: number | string = 0, catID: PdbCategory = PdbCategory.None): Observable<SearchResponse> {
+    const url = `https://api.personality-database.com/api/v2/search/profiles`;
+    let params = new HttpParams()
+      .set('query', query)
+      .set('limit', String(limit))
+      .set('nextCursor', String(nextCursor))
+      .set('pid', '0')
+      .set('catID', String(catID));
+
+    return this.http.get<SearchResponse>(url, { params });
   }
 }
