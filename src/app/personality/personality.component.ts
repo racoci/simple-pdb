@@ -56,21 +56,21 @@ export class PersonalityComponent implements OnInit {
     }
 
     this.loading = true;
-    const handleError = catchError(err => {
-      this.error = 'Error fetching personality data';
-      this.loading = false;
-      console.error(err);
-      return of(null);
-    });
-
     if (this.query) {
       this.profileService.searchCharacters(
         this.query,
         this.limit,
         this.nextCursor || 0,
         this.category
-      ).pipe(handleError)
-        .subscribe((res: SearchResponse | null) => {
+      ).pipe(
+        catchError(err => {
+          this.error = 'Error fetching personality data';
+          this.loading = false;
+          console.error(err);
+          return of(null);
+        })
+      )
+        .subscribe(res => {
           this.loading = false;
           if (res) {
             const filtered = res.data.results.filter(p => {
@@ -102,8 +102,15 @@ export class PersonalityComponent implements OnInit {
         this.category,
         this.nextCursor || undefined,
         this.limit
-      ).pipe(handleError)
-        .subscribe((res: PersonalityResponse | null) => {
+      ).pipe(
+        catchError(err => {
+          this.error = 'Error fetching personality data';
+          this.loading = false;
+          console.error(err);
+          return of(null);
+        })
+      )
+        .subscribe(res => {
           this.loading = false;
           if (res) {
             this.profiles = [...this.profiles, ...res.profiles];

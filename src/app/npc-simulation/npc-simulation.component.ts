@@ -236,6 +236,13 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  getMbti(profile: SearchResponseProfile): string {
+    return (
+      profile.personalities.find(p => p.system === 'Four Letter')?.personality ||
+      ''
+    );
+  }
+
   private getColorForCategory(category: string): string {
     switch (category) {
       case 'Pop Culture': return '#a6cee3';

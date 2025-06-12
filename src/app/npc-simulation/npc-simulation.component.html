@@ -8,7 +8,7 @@
 
   <ul *ngIf="searchResults.length > 0" class="search-results">
     <li *ngFor="let result of searchResults">
-      {{ result.profile_name_searchable || result.mbti_profile }}
+      {{ result.name }} ({{ getMbti(result) }})
       <button (click)="addSearchedProfile(result)">Add</button>
     </li>
   </ul>
