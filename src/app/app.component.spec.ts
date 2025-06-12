@@ -20,10 +20,10 @@ describe('AppComponent', () => {
     expect(app.title).toEqual('simple-pdb');
   });
 
-  it('should render title', () => {
+  it('should render navigation link', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, simple-pdb');
+    expect(compiled.querySelector('nav a')?.textContent).toContain('Personality Profiles');
   });
 });
