@@ -10,28 +10,13 @@ import {ProfileResponse} from '../personality/profile/models/profile-response.mo
   selector: 'app-profile-selector',
   standalone: true,
   templateUrl: 'profile-selector.component.html',
+  styleUrls: ['./profile-selector.component.css'],
   imports: [
     FormsModule,
     NgForOf,
     NgIf
   ],
-  styles: [
-    `
-      form {
-        display: flex;
-        flex-direction: column;
-        max-width: 300px;
-      }
-
-      div {
-        margin-bottom: 1rem;
-      }
-
-      label {
-        margin-bottom: 0.5rem;
-      }
-    `
-  ]
+  
 })
 export class ProfileSelectorComponent implements OnInit {
   mbtiList: string[] = [

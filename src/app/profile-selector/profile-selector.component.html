@@ -1,29 +1,31 @@
-<form (ngSubmit)="onSubmit()" #selectorForm="ngForm">
-  <div>
-    <label for="mbti">MBTI (mandatory):</label>
-    <select id="mbti" [(ngModel)]="selectedMbti" name="mbti" required>
-      <option *ngFor="let type of mbtiList" [value]="type">{{ type }}</option>
-    </select>
+<div class="selector-container">
+  <form (ngSubmit)="onSubmit()" #selectorForm="ngForm">
+    <div>
+      <label for="mbti">MBTI (mandatory):</label>
+      <select id="mbti" [(ngModel)]="selectedMbti" name="mbti" required>
+        <option *ngFor="let type of mbtiList" [value]="type">{{ type }}</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="category">Category (optional):</label>
+      <select id="category" [(ngModel)]="selectedCategory" name="category">
+        <option value="">None</option>
+        <option *ngFor="let cat of categoryOptions" [value]="cat.value">{{ cat.label }}</option>
+      </select>
+    </div>
+
+    <button type="submit" [disabled]="!selectorForm.form.valid">Submit</button>
+  </form>
+
+  <div class="search">
+    <input type="text" [(ngModel)]="searchTerm" (input)="onSearchTermChange()" placeholder="Search characters" name="search" />
   </div>
 
-  <div>
-    <label for="category">Category (optional):</label>
-    <select id="category" [(ngModel)]="selectedCategory" name="category">
-      <option value="">None</option>
-      <option *ngFor="let cat of categoryOptions" [value]="cat.value">{{ cat.label }}</option>
-    </select>
-  </div>
-
-  <button type="submit" [disabled]="!selectorForm.form.valid">Submit</button>
-</form>
-
-<div class="search">
-  <input type="text" [(ngModel)]="searchTerm" (input)="onSearchTermChange()" placeholder="Search characters" name="search" />
+  <ul *ngIf="searchResults.length > 0" class="search-results">
+    <li *ngFor="let result of searchResults">
+      {{ result.profile_name_searchable || result.mbti_profile }}
+      <button (click)="goToProfile(result.id)">View</button>
+    </li>
+  </ul>
 </div>
-
-<ul *ngIf="searchResults.length > 0" class="search-results">
-  <li *ngFor="let result of searchResults">
-    {{ result.profile_name_searchable || result.mbti_profile }}
-    <button (click)="goToProfile(result.id)">View</button>
-  </li>
-</ul>
