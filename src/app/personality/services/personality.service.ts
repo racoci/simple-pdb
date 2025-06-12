@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { PersonalityResponse } from '../models/personality-response.model';
+import { PdbCategory } from '../profile/models/pdb-category.enum';
 
 @Injectable({
   providedIn: 'root'
@@ -36,7 +37,7 @@ export class PersonalityService {
    */
   getMbtiCharacters(
     mbti: string,
-    category?: number,
+    category: PdbCategory = PdbCategory.None,
     nextCursor?: string,
     limit?: number
   ): Observable<PersonalityResponse> {
@@ -76,8 +77,8 @@ export class PersonalityService {
 
     // Build query parameters if provided.
     let params = new HttpParams();
-    if (category) {
-      params = params.set('category', category);
+    if (category !== PdbCategory.None) {
+      params = params.set('category', String(category));
     }
     if (nextCursor) {
       params = params.set('nextCursor', nextCursor);

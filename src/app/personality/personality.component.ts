@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PersonalityResponse, Profile } from './models/personality-response.model';
 import { PersonalityService } from './services/personality.service';
+import { PdbCategory } from './profile/models/pdb-category.enum';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { InfiniteScrollModule } from 'ngx-infinite-scroll';
@@ -23,7 +24,7 @@ export class PersonalityComponent implements OnInit {
 
   // Default values can be overridden by query parameters.
   private mbti = 'ENTJ';
-  private category = 0;
+  private category: PdbCategory = PdbCategory.None;
   private limit = 50;
 
   constructor(
@@ -36,7 +37,7 @@ export class PersonalityComponent implements OnInit {
     // Subscribe to query parameters.
     this.route.queryParams.subscribe(params => {
       this.mbti = params['mbti'] || this.mbti;
-      this.category = params['category'] ? +params['category'] : this.category;
+      this.category = params['category'] ? +params['category'] as PdbCategory : this.category;
       this.profiles = [];
       this.nextCursor = null;
       this.hasMore = true;

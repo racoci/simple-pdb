@@ -1,21 +1,22 @@
 <div class="selector-container">
   <form (ngSubmit)="onSubmit()" #selectorForm="ngForm" class="options-form">
     <div class="option">
-      <label for="mbti">MBTI (mandatory):</label>
-      <select id="mbti" [(ngModel)]="selectedMbti" name="mbti" (change)="onFilterChange()" required>
+      <label for="mbti">MBTI:</label>
+      <select id="mbti" [(ngModel)]="selectedMbti" name="mbti" (change)="onFilterChange()">
+        <option value="">Any</option>
         <option *ngFor="let type of mbtiList" [value]="type">{{ type }}</option>
       </select>
     </div>
 
     <div class="option">
-      <label for="category">Category (optional):</label>
+      <label for="category">Category:</label>
       <select id="category" [(ngModel)]="selectedCategory" name="category" (change)="onFilterChange()">
-        <option value="">None</option>
-        <option *ngFor="let cat of categoryOptions" [value]="cat.value">{{ cat.label }}</option>
+        <option [ngValue]="PdbCategory.None">None</option>
+        <option *ngFor="let cat of categoryOptions" [ngValue]="cat.value">{{ cat.label }}</option>
       </select>
     </div>
 
-    <button type="submit" [disabled]="!selectorForm.form.valid">Submit</button>
+    <button type="submit">Submit</button>
   </form>
 
   <input

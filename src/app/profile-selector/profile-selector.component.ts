@@ -4,7 +4,8 @@ import {FormsModule} from '@angular/forms';
 import {NgForOf, NgIf} from '@angular/common';
 import {PersonalityService} from '../personality/services/personality.service';
 import {Profile} from '../personality/models/personality-response.model';
-import {SuggestionService, PdbCategory} from '../personality/profile/services/suggestion.service';
+import {SuggestionService} from '../personality/profile/services/suggestion.service';
+import { PdbCategory } from '../personality/profile/models/pdb-category.enum';
 
 
 @Component({
@@ -25,51 +26,52 @@ export class ProfileSelectorComponent implements OnInit {
     'INFJ','ENFJ','INFP','ENFP','INTP','ENTP','INTJ','ENTJ'
   ];
 
-  categoryOptions: { label: string, value: string }[] = [
-    { label: "Pop Culture", value: "1" },
-    { label: "Television", value: "2" },
-    { label: "Movies", value: "3" },
-    { label: "Sports", value: "5" },
-    { label: "Cartoons", value: "7" },
-    { label: "Anime & Manga", value: "8" },
-    { label: "Comics", value: "9" },
-    { label: "Noteworthy", value: "10" },
-    { label: "Gaming", value: "11" },
-    { label: "Literature", value: "12" },
-    { label: "Theatre", value: "13" },
-    { label: "Musician", value: "14" },
-    { label: "Internet", value: "15" },
-    { label: "The Arts", value: "16" },
-    { label: "Business", value: "17" },
-    { label: "Religion", value: "18" },
-    { label: "Science", value: "21" },
-    { label: "Historical", value: "22" },
-    { label: "Web Comics", value: "26" },
-    { label: "Superheroes", value: "27" },
-    { label: "Philosophy", value: "28" },
-    { label: "Kpop", value: "29" },
-    { label: "Traits", value: "30" },
-    { label: "Plots & Archetypes", value: "31" },
-    { label: "Concepts", value: "32" },
-    { label: "Music", value: "33" },
-    { label: "Franchises", value: "34" },
-    { label: "Culture", value: "35" },
-    { label: "Theories", value: "36" },
-    { label: "Polls (If you...)", value: "37" },
-    { label: "Your Experience", value: "38" },
-    { label: "Type Combo (Your Type)", value: "39" },
-    { label: "Ask Pdb", value: "40" },
-    { label: "PDB Community", value: "41" },
-    { label: "Nature", value: "42" },
-    { label: "Technology", value: "43" }
+  categoryOptions: { label: string, value: PdbCategory }[] = [
+    { label: 'Pop Culture', value: PdbCategory.PopCulture },
+    { label: 'Television', value: PdbCategory.Television },
+    { label: 'Movies', value: PdbCategory.Movies },
+    { label: 'Sports', value: PdbCategory.Sports },
+    { label: 'Cartoons', value: PdbCategory.Cartoons },
+    { label: 'Anime & Manga', value: PdbCategory.AnimeManga },
+    { label: 'Comics', value: PdbCategory.Comics },
+    { label: 'Noteworthy', value: PdbCategory.Noteworthy },
+    { label: 'Gaming', value: PdbCategory.Gaming },
+    { label: 'Literature', value: PdbCategory.Literature },
+    { label: 'Theatre', value: PdbCategory.Theatre },
+    { label: 'Musician', value: PdbCategory.Musician },
+    { label: 'Internet', value: PdbCategory.Internet },
+    { label: 'The Arts', value: PdbCategory.TheArts },
+    { label: 'Business', value: PdbCategory.Business },
+    { label: 'Religion', value: PdbCategory.Religion },
+    { label: 'Science', value: PdbCategory.Science },
+    { label: 'Historical', value: PdbCategory.Historical },
+    { label: 'Web Comics', value: PdbCategory.WebComics },
+    { label: 'Superheroes', value: PdbCategory.Superheroes },
+    { label: 'Philosophy', value: PdbCategory.Philosophy },
+    { label: 'Kpop', value: PdbCategory.Kpop },
+    { label: 'Traits', value: PdbCategory.Traits },
+    { label: 'Plots & Archetypes', value: PdbCategory.PlotsArchetypes },
+    { label: 'Concepts', value: PdbCategory.Concepts },
+    { label: 'Music', value: PdbCategory.Music },
+    { label: 'Franchises', value: PdbCategory.Franchises },
+    { label: 'Culture', value: PdbCategory.Culture },
+    { label: 'Theories', value: PdbCategory.Theories },
+    { label: 'Polls (If you...)', value: PdbCategory.PollsIfYou },
+    { label: 'Your Experience', value: PdbCategory.YourExperience },
+    { label: 'Type Combo (Your Type)', value: PdbCategory.TypeComboYourType },
+    { label: 'Ask Pdb', value: PdbCategory.AskPdb },
+    { label: 'PDB Community', value: PdbCategory.PdbCommunity },
+    { label: 'Nature', value: PdbCategory.Nature },
+    { label: 'Technology', value: PdbCategory.Technology }
   ];
 
-  selectedMbti: string = this.mbtiList[0];
-  selectedCategory: string = "";
+  selectedMbti: string = '';
+  selectedCategory: PdbCategory = PdbCategory.None;
   searchTerm = '';
   profiles: Profile[] = [];
   filteredProfiles: Profile[] = [];
   suggestions: { id: string; name: string }[] = [];
+  PdbCategory = PdbCategory;
 
   constructor(
     private router: Router,
@@ -88,12 +90,13 @@ export class ProfileSelectorComponent implements OnInit {
 
   onFilterChange(): void {
     this.loadProfiles();
+    this.loadSuggestions();
   }
 
   loadProfiles(): void {
     this.personalityService.getMbtiCharacters(
       this.selectedMbti,
-      this.selectedCategory ? +this.selectedCategory : undefined,
+      this.selectedCategory,
       undefined,
       50
     ).subscribe(res => {
@@ -110,7 +113,7 @@ export class ProfileSelectorComponent implements OnInit {
     }
 
     this.suggestionService.getSuggestions(term, {
-      category: this.selectedCategory ? +this.selectedCategory as PdbCategory : undefined
+      category: this.selectedCategory !== PdbCategory.None ? this.selectedCategory : undefined
     }).subscribe(res => {
       this.suggestions = res.data.results
         .filter(r => r.type === 'profile' && r.profile)
@@ -126,14 +129,18 @@ export class ProfileSelectorComponent implements OnInit {
   }
 
   onSubmit() {
-    // Build the query parameters.
-    const queryParams: any = { mbti: this.selectedMbti };
-    if (this.selectedCategory) {
+    const queryParams: any = {};
+    if (this.selectedMbti) {
+      queryParams.mbti = this.selectedMbti;
+    }
+    if (this.selectedCategory !== PdbCategory.None) {
       queryParams.category = this.selectedCategory;
     }
+    if (this.searchTerm.trim()) {
+      queryParams.query = this.searchTerm.trim();
+    }
 
-    // Navigate to the 'personality' route with the selected parameters.
-    this.router.navigate(['/personality'], {queryParams}).then(() => {});
+    this.router.navigate(['/personality'], { queryParams }).then(() => {});
   }
 
   goToProfile(id: number): void {
