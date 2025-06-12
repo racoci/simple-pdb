@@ -109,18 +109,24 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .attr('d', this.makeArcPath(false))
           .attr('fill', 'none');
 
-        this.nodeElements.append('text')
+        const topText = this.nodeElements.append('text')
           .attr('class', 'name-top')
-          .append('textPath')
+          // pull text slightly upward for visual balance
+          .attr('dy', '-0.3em');
+
+        topText.append('textPath')
           .attr('xlink:href', d => `#arc-top-${d.id}`)
           .attr('startOffset', '50%')
           .style('text-anchor', 'middle')
           .text(d => this.splitName(d.profile_name || d.profile_name_searchable)[0])
           .attr('fill', d => this.getColorForCategory(d.category));
 
-        this.nodeElements.append('text')
+        const bottomText = this.nodeElements.append('text')
           .attr('class', 'name-bottom')
-          .append('textPath')
+          // push text slightly downward so it clears the bubble
+          .attr('dy', '0.8em');
+
+        bottomText.append('textPath')
           .attr('xlink:href', d => `#arc-bottom-${d.id}`)
           .attr('startOffset', '50%')
           .style('text-anchor', 'middle')
@@ -345,7 +351,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     if (!name) {
       return ['', ''];
     }
-    const parts = name.split(' ');
+    const parts = name.trim().split(/\s+/);
     if (parts.length > 1) {
       const mid = Math.ceil(parts.length / 2);
       const top = parts.slice(0, mid).join(' ');
@@ -356,7 +362,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       return [name, ''];
     }
     const half = Math.ceil(name.length / 2);
-    return [name.slice(0, half), name.slice(half)];
+    const first = name.slice(0, half).trim();
+    const second = name.slice(half).trim();
+    return [first, second];
   }
 
   private adjustFontSize(): void {
