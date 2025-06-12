@@ -60,8 +60,13 @@ export class ProfileService {
    * Search characters using the v2 search endpoint.
    * All parameters except the query are optional.
    */
-  searchCharacters(query: string, limit = 10, nextCursor: number | string = 0, catID: PdbCategory = PdbCategory.None): Observable<SearchResponse> {
-    const url = `https://api.personality-database.com/api/v2/search/profiles`;
+  searchCharacters(
+    query: string,
+    limit = 1000,
+    nextCursor: number | string = 0,
+    catID: PdbCategory = PdbCategory.None
+  ): Observable<SearchResponse> {
+    const apiUrl = `/api/v2/search/profiles`;
     let params = new HttpParams()
       .set('query', query)
       .set('limit', String(limit))
@@ -69,6 +74,6 @@ export class ProfileService {
       .set('pid', '0')
       .set('catID', String(catID));
 
-    return this.http.get<SearchResponse>(url, { params });
+    return this.http.get<SearchResponse>(apiUrl, { params });
   }
 }
