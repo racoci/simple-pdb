@@ -16,6 +16,7 @@ export interface Profile {
   personality_type: string
   profile_id: number
   profile_image_url: string
+  profile_name_searchable: string
   sub_cat_id: number
   subcategory: string
   vote_count: number

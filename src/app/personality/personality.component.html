@@ -8,14 +8,14 @@
       [infiniteScrollDistance]="2"
       [infiniteScrollThrottle]="150"
       (scrolled)="onScroll()">
-  <div
-    class="personality-card"
-    *ngFor="let profile of profiles"
-    (click)="goToProfile(profile.id)">
-    <h3>{{ profile.mbti_profile }}</h3>
-    <img [src]="profile.profile_image_url" alt="{{ profile.mbti_profile }}" width="100">
-    <p>{{ profile.personality_type }}</p>
-  </div>
+    <div
+      class="personality-card"
+      *ngFor="let profile of profiles"
+      (click)="goToProfile(profile.id)">
+      <img [src]="profile.profile_image_url" alt="{{ profile.profile_name_searchable }}" width="100">
+      <h3>{{ profile.profile_name_searchable }}</h3>
+      <p>{{ profile.mbti_profile }}</p>
+    </div>
 </div>
 
 <!-- Optionally show a loading indicator at the bottom when more data is being fetched -->

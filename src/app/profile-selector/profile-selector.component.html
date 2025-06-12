@@ -29,14 +29,16 @@
 
   <ul *ngIf="searchTerm && suggestions.length > 0" class="search-results">
     <li *ngFor="let s of suggestions">
-      {{ s.name }}
+      <img *ngIf="s.imageUrl" [src]="s.imageUrl" width="40" alt="{{ s.name }}" />
+      <span>{{ s.name }}<span *ngIf="s.mbti"> ({{ s.mbti }})</span></span>
       <button (click)="goToProfile(+s.id)">View</button>
     </li>
   </ul>
 
   <ul *ngIf="!searchTerm && filteredProfiles.length > 0" class="search-results">
     <li *ngFor="let result of filteredProfiles">
-      {{ result.mbti_profile }}
+      <img [src]="result.profile_image_url" width="40" alt="{{ result.profile_name_searchable }}" />
+      <span>{{ result.profile_name_searchable }} ({{ result.mbti_profile }})</span>
       <button (click)="goToProfile(result.id)">View</button>
     </li>
   </ul>

@@ -34,3 +34,7 @@
   align-items: center;
   margin-bottom: 0.25rem;
 }
+
+.search-results li img {
+  margin-right: 0.5rem;
+}

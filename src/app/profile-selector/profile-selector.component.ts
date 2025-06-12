@@ -70,7 +70,7 @@ export class ProfileSelectorComponent implements OnInit {
   searchTerm = '';
   profiles: Profile[] = [];
   filteredProfiles: Profile[] = [];
-  suggestions: { id: string; name: string }[] = [];
+  suggestions: { id: string; name: string; imageUrl?: string; mbti?: string }[] = [];
   PdbCategory = PdbCategory;
 
   constructor(
@@ -117,15 +117,22 @@ export class ProfileSelectorComponent implements OnInit {
     }).subscribe(res => {
       this.suggestions = res.data.results
         .filter(r => r.type === 'profile' && r.profile)
-        .map(r => ({ id: r.profile!.id, name: r.profile!.name }));
+        .map(r => ({
+          id: r.profile!.id,
+          name: r.profile!.name,
+          imageUrl: r.profile!.image?.picURL,
+          mbti: r.profile!.personalities.find(p => p.system === 'Four Letter')?.personality
+        }));
     });
   }
 
   private filterProfiles(): void {
     const term = this.searchTerm.trim().toLowerCase();
-    this.filteredProfiles = this.profiles.filter(p =>
-      p.mbti_profile.toLowerCase().includes(term)
-    );
+    this.filteredProfiles = this.profiles.filter(p => {
+      const name = p.profile_name_searchable?.toLowerCase() || '';
+      const mbti = p.mbti_profile.toLowerCase();
+      return name.includes(term) || mbti.includes(term);
+    });
   }
 
   onSubmit() {

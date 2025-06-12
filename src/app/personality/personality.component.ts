@@ -81,6 +81,7 @@ export class PersonalityComponent implements OnInit {
               id: +p.id,
               cat_id: +p.categoryID,
               comment_count: p.commentCount,
+              profile_name_searchable: p.name,
               mbti_profile: p.personalities.find(per => per.system === 'Four Letter')?.personality || '',
               personality_type: '',
               profile_id: +p.id,
