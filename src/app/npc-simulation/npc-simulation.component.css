@@ -52,12 +52,16 @@
 
 .profile-sidebar {
   width: 300px;
+  min-width: 200px;
+  max-width: 500px;
   height: 80vh;
   overflow-y: auto;
   border-left: 1px solid #444;
   padding: 1rem;
   background: #222;
   color: #f0f0f0;
+  resize: horizontal;
+  overflow: auto;
 }
 
 .profile-sidebar img {
