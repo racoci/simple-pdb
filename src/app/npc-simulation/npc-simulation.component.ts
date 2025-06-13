@@ -38,6 +38,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
   hoveredProfile: ProfileResponse | null = null;
   @ViewChild('sidebar', { read: ElementRef }) sidebar?: ElementRef<HTMLElement>;
+  sidebarWidth = 300;
   private isResizing = false;
   private resizeStart = 0;
   private sidebarStartWidth = 0;
@@ -188,7 +189,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     }
     this.isResizing = true;
     this.resizeStart = event.clientX;
-    this.sidebarStartWidth = this.sidebar.nativeElement.offsetWidth;
+    this.sidebarStartWidth = this.sidebarWidth;
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.stopResize);
   }
@@ -200,7 +201,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     const dx = this.resizeStart - event.clientX;
     let newWidth = this.sidebarStartWidth + dx;
     newWidth = Math.min(Math.max(newWidth, 200), 500);
-    this.sidebar.nativeElement.style.width = `${newWidth}px`;
+    this.sidebarWidth = newWidth;
   };
 
   private stopResize = (): void => {

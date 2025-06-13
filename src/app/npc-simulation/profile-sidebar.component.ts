@@ -8,7 +8,8 @@ import { ProfileResponse } from '../personality/profile/models/profile-response.
   standalone: true,
   imports: [CommonModule],
   templateUrl: './profile-sidebar.component.html',
-  styleUrls: ['./profile-sidebar.component.css']
+  styleUrls: ['./profile-sidebar.component.css'],
+  host: { class: 'profile-sidebar' }
 })
 export class ProfileSidebarComponent {
   @Input() profile!: ProfileResponse;

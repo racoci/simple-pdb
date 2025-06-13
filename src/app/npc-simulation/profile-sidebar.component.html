@@ -1,5 +1,4 @@
-<div class="profile-sidebar" *ngIf="profile" #sidebar>
-  <h3>{{ profile.profile_name || profile.mbti_profile }}</h3>
+<h3>{{ profile.profile_name || profile.mbti_profile }}</h3>
   <img *ngIf="profile.profile_image_url" [src]="profile.profile_image_url" alt="{{ profile.profile_name }}" />
   <p><strong>MBTI:</strong> {{ profile.mbti_type }}</p>
   <p><strong>Category:</strong> {{ profile.category }} / {{ profile.subcategory }}</p>
@@ -15,4 +14,3 @@
   </div>
   <button (click)="openProfilePage(profile.id)">Open Profile</button>
   <div [innerHTML]="profile.wiki_description_html"></div>
-</div>

@@ -1,5 +1,5 @@
-.profile-sidebar {
-  width: 300px;
+:host {
+  display: block;
   min-width: 200px;
   max-width: 500px;
   height: 80vh;
@@ -10,7 +10,7 @@
   color: #f0f0f0;
 }
 
-.profile-sidebar img {
+img {
   width: 100%;
   border-radius: 4px;
   margin-bottom: 0.5rem;
@@ -26,7 +26,7 @@
   margin-bottom: 0.25rem;
 }
 
-.profile-sidebar button {
+button {
   margin-bottom: 0.5rem;
   padding: 0.25rem 0.5rem;
   background: #333;
@@ -35,6 +35,6 @@
   cursor: pointer;
 }
 
-.profile-sidebar button:hover {
+button:hover {
   background: #444;
 }
