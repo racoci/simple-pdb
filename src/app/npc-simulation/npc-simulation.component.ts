@@ -35,6 +35,12 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   searchResults: SearchResponseProfile[] = [];
   private searchSub?: Subscription;
 
+  hoveredProfile: ProfileResponse | null = null;
+  @ViewChild('sidebar') sidebar?: ElementRef<HTMLDivElement>;
+  private isResizing = false;
+  private resizeStart = 0;
+  private sidebarStartWidth = 0;
+
   constructor(
     private npcService: NpcSimulationService,
     private profileService: ProfileService,
@@ -70,9 +76,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
             const profile = node;
             if (profile) {
               this.ngZone.run(() => {
-                this.router.navigate(['/profile', profile.id]).then(() => {
-                  console.log('Profile clicked');
-                });
+                this.profileService
+                  .fetchProfile(String(node.id))
+                  .subscribe(profile => (this.hoveredProfile = profile));
               });
             }
           });
@@ -173,6 +179,39 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     if (this.zoomBehavior) {
       this.svg.transition().call(this.zoomBehavior.scaleBy as any, 0.8);
     }
+  }
+
+  initResize(event: MouseEvent): void {
+    if (!this.sidebar) {
+      return;
+    }
+    this.isResizing = true;
+    this.resizeStart = event.clientX;
+    this.sidebarStartWidth = this.sidebar.nativeElement.offsetWidth;
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mouseup', this.stopResize);
+  }
+
+  private onMouseMove = (event: MouseEvent): void => {
+    if (!this.isResizing || !this.sidebar) {
+      return;
+    }
+    const dx = this.resizeStart - event.clientX;
+    let newWidth = this.sidebarStartWidth + dx;
+    newWidth = Math.min(Math.max(newWidth, 200), 500);
+    this.sidebar.nativeElement.style.width = `${newWidth}px`;
+  };
+
+  private stopResize = (): void => {
+    this.isResizing = false;
+    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mouseup', this.stopResize);
+  };
+
+  openProfilePage(id: number): void {
+    this.router.navigate(['/profile', id]).then(() => {
+      console.log('Profile button clicked');
+    });
   }
 
   addNpc(event: MouseEvent): void {

@@ -1,19 +1,46 @@
 <div class="simulation-wrapper">
-  <svg #svgContainer class="simulation-canvas"></svg>
-  <div class="zoom-controls">
-    <button class="zoom-btn" (click)="zoomIn()">+</button>
-    <button class="zoom-btn" (click)="zoomOut()">-</button>
-  </div>
-  <div class="controls">
-    <button (click)="addNpc($event)">Add NPC</button>
-    <input type="text" [(ngModel)]="searchTerm" (input)="onSearchTermChange()" (keyup.enter)="search()" placeholder="Search characters" />
-    <button (click)="search()">Search</button>
+  <div class="simulation-area">
+    <svg #svgContainer class="simulation-canvas"></svg>
+    <div class="zoom-controls">
+      <button class="zoom-btn" (click)="zoomIn()">+</button>
+      <button class="zoom-btn" (click)="zoomOut()">-</button>
+    </div>
+    <div class="controls">
+      <button (click)="addNpc($event)">Add NPC</button>
+      <input type="text" [(ngModel)]="searchTerm" (input)="onSearchTermChange()" (keyup.enter)="search()" placeholder="Search characters" />
+      <button (click)="search()">Search</button>
+    </div>
+
+    <ul *ngIf="searchResults.length > 0" class="search-results">
+      <li *ngFor="let result of searchResults">
+        {{ result.name }} ({{ getMbti(result) }})
+        <button (click)="addSearchedProfile(result)">Add</button>
+      </li>
+    </ul>
   </div>
 
-  <ul *ngIf="searchResults.length > 0" class="search-results">
-    <li *ngFor="let result of searchResults">
-      {{ result.name }} ({{ getMbti(result) }})
-      <button (click)="addSearchedProfile(result)">Add</button>
-    </li>
-  </ul>
+  <div
+    class="sidebar-resizer"
+    *ngIf="hoveredProfile"
+    (mousedown)="initResize($event)"
+  ></div>
+
+  <div class="profile-sidebar" *ngIf="hoveredProfile as profile" #sidebar>
+    <h3>{{ profile.profile_name || profile.mbti_profile }}</h3>
+    <img *ngIf="profile.profile_image_url" [src]="profile.profile_image_url" alt="{{ profile.profile_name }}" />
+    <p><strong>MBTI:</strong> {{ profile.mbti_type }}</p>
+    <p><strong>Category:</strong> {{ profile.category }} / {{ profile.subcategory }}</p>
+    <p><strong>Votes:</strong> {{ profile.vote_count }} | <strong>Comments:</strong> {{ profile.comment_count }}</p>
+    <div *ngIf="profile.systems?.length">
+      <h4>Best Votes</h4>
+      <ul class="system-votes">
+        <li *ngFor="let sys of profile.systems">
+          <span [style.color]="sys.hex_color">{{ sys.system_name }}</span>:
+          {{ sys.personality_type }}
+        </li>
+      </ul>
+    </div>
+    <button (click)="openProfilePage(profile.id)">Open Profile</button>
+    <div [innerHTML]="profile.wiki_description_html"></div>
+  </div>
 </div>
