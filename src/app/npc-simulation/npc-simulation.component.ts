@@ -8,11 +8,12 @@ import {ProfileService} from '../personality/profile/services/profile.service';
 import {ProfileResponse} from '../personality/profile/models/profile-response.model';
 import {SearchResponseProfile} from '../personality/profile/models/search-response.model';
 import { Subscription } from 'rxjs';
+import { ProfileSidebarComponent } from './profile-sidebar.component';
 
 @Component({
   selector: 'app-npc-simulation',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ProfileSidebarComponent],
   templateUrl: './npc-simulation.component.html',
   styleUrls: ['./npc-simulation.component.css']
 })
@@ -36,7 +37,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   private searchSub?: Subscription;
 
   hoveredProfile: ProfileResponse | null = null;
-  @ViewChild('sidebar') sidebar?: ElementRef<HTMLDivElement>;
+  @ViewChild('sidebar', { read: ElementRef }) sidebar?: ElementRef<HTMLElement>;
   private isResizing = false;
   private resizeStart = 0;
   private sidebarStartWidth = 0;

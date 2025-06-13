@@ -25,22 +25,9 @@
     (mousedown)="initResize($event)"
   ></div>
 
-  <div class="profile-sidebar" *ngIf="hoveredProfile as profile" #sidebar>
-    <h3>{{ profile.profile_name || profile.mbti_profile }}</h3>
-    <img *ngIf="profile.profile_image_url" [src]="profile.profile_image_url" alt="{{ profile.profile_name }}" />
-    <p><strong>MBTI:</strong> {{ profile.mbti_type }}</p>
-    <p><strong>Category:</strong> {{ profile.category }} / {{ profile.subcategory }}</p>
-    <p><strong>Votes:</strong> {{ profile.vote_count }} | <strong>Comments:</strong> {{ profile.comment_count }}</p>
-    <div *ngIf="profile.systems?.length">
-      <h4>Best Votes</h4>
-      <ul class="system-votes">
-        <li *ngFor="let sys of profile.systems">
-          <span [style.color]="sys.hex_color">{{ sys.system_name }}</span>:
-          {{ sys.personality_type }}
-        </li>
-      </ul>
-    </div>
-    <button (click)="openProfilePage(profile.id)">Open Profile</button>
-    <div [innerHTML]="profile.wiki_description_html"></div>
-  </div>
+  <app-profile-sidebar
+    *ngIf="hoveredProfile as profile"
+    [profile]="profile"
+    #sidebar
+  ></app-profile-sidebar>
 </div>
