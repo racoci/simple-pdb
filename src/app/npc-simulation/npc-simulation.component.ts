@@ -35,6 +35,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   searchResults: SearchResponseProfile[] = [];
   private searchSub?: Subscription;
 
+  hoveredProfile: NpcNode | null = null;
+
   constructor(
     private npcService: NpcSimulationService,
     private profileService: ProfileService,
@@ -75,6 +77,16 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
                 });
               });
             }
+          })
+          .on('mouseover', (_event, node) => {
+            this.ngZone.run(() => {
+              this.hoveredProfile = node;
+            });
+          })
+          .on('mouseout', () => {
+            this.ngZone.run(() => {
+              this.hoveredProfile = null;
+            });
           });
 
         this.nodeElements.append('defs')
