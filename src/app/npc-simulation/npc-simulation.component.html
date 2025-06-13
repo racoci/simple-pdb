@@ -19,7 +19,7 @@
     </ul>
   </div>
 
-  <div class="profile-sidebar" *ngIf="hoveredProfile as profile">
+  <div class="profile-sidebar" *ngIf="selectedProfile as profile">
     <h3>{{ profile.profile_name || profile.mbti_profile }}</h3>
     <img *ngIf="profile.profile_image_url" [src]="profile.profile_image_url" alt="{{ profile.profile_name }}" />
     <p><strong>MBTI:</strong> {{ profile.mbti_type }}</p>
@@ -34,6 +34,7 @@
         </li>
       </ul>
     </div>
+    <button (click)="openProfilePage(profile.id)">Open Profile</button>
     <div [innerHTML]="profile.wiki_description_html"></div>
   </div>
 </div>

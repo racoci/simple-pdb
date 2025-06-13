@@ -35,7 +35,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   searchResults: SearchResponseProfile[] = [];
   private searchSub?: Subscription;
 
-  hoveredProfile: NpcNode | null = null;
+  selectedProfile: ProfileResponse | null = null;
 
   constructor(
     private npcService: NpcSimulationService,
@@ -69,23 +69,10 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .append('g')
           .attr('class', 'npc-node')
           .on('click', (_event, node) => {
-            const profile = node;
-            if (profile) {
-              this.ngZone.run(() => {
-                this.router.navigate(['/profile', profile.id]).then(() => {
-                  console.log('Profile clicked');
-                });
-              });
-            }
-          })
-          .on('mouseover', (_event, node) => {
             this.ngZone.run(() => {
-              this.hoveredProfile = node;
-            });
-          })
-          .on('mouseout', () => {
-            this.ngZone.run(() => {
-              this.hoveredProfile = null;
+              this.profileService
+                .fetchProfile(String(node.id))
+                .subscribe(profile => (this.selectedProfile = profile));
             });
           });
 
@@ -185,6 +172,12 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     if (this.zoomBehavior) {
       this.svg.transition().call(this.zoomBehavior.scaleBy as any, 0.8);
     }
+  }
+
+  openProfilePage(id: number): void {
+    this.router.navigate(['/profile', id]).then(() => {
+      console.log('Profile button clicked');
+    });
   }
 
   addNpc(event: MouseEvent): void {
