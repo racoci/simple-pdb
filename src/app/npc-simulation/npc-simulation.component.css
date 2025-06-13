@@ -50,6 +50,13 @@
   gap: 0.25rem;
 }
 
+.sidebar-resizer {
+  width: 5px;
+  cursor: col-resize;
+  background: #444;
+  height: 80vh;
+}
+
 .profile-sidebar {
   width: 300px;
   min-width: 200px;
@@ -60,8 +67,6 @@
   padding: 1rem;
   background: #222;
   color: #f0f0f0;
-  resize: horizontal;
-  overflow: auto;
 }
 
 .profile-sidebar img {

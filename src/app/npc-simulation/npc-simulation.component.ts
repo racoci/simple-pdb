@@ -35,7 +35,11 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   searchResults: SearchResponseProfile[] = [];
   private searchSub?: Subscription;
 
-  selectedProfile: ProfileResponse | null = null;
+  hoveredProfile: ProfileResponse | null = null;
+  @ViewChild('sidebar') sidebar?: ElementRef<HTMLDivElement>;
+  private isResizing = false;
+  private resizeStart = 0;
+  private sidebarStartWidth = 0;
 
   constructor(
     private npcService: NpcSimulationService,
@@ -68,11 +72,16 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .enter()
           .append('g')
           .attr('class', 'npc-node')
-          .on('click', (_event, node) => {
+          .on('mouseover', (_event, node) => {
             this.ngZone.run(() => {
               this.profileService
                 .fetchProfile(String(node.id))
-                .subscribe(profile => (this.selectedProfile = profile));
+                .subscribe(profile => (this.hoveredProfile = profile));
+            });
+          })
+          .on('mouseout', () => {
+            this.ngZone.run(() => {
+              this.hoveredProfile = null;
             });
           });
 
@@ -173,6 +182,33 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       this.svg.transition().call(this.zoomBehavior.scaleBy as any, 0.8);
     }
   }
+
+  initResize(event: MouseEvent): void {
+    if (!this.sidebar) {
+      return;
+    }
+    this.isResizing = true;
+    this.resizeStart = event.clientX;
+    this.sidebarStartWidth = this.sidebar.nativeElement.offsetWidth;
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mouseup', this.stopResize);
+  }
+
+  private onMouseMove = (event: MouseEvent): void => {
+    if (!this.isResizing || !this.sidebar) {
+      return;
+    }
+    const dx = this.resizeStart - event.clientX;
+    let newWidth = this.sidebarStartWidth + dx;
+    newWidth = Math.min(Math.max(newWidth, 200), 500);
+    this.sidebar.nativeElement.style.width = `${newWidth}px`;
+  };
+
+  private stopResize = (): void => {
+    this.isResizing = false;
+    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mouseup', this.stopResize);
+  };
 
   openProfilePage(id: number): void {
     this.router.navigate(['/profile', id]).then(() => {
