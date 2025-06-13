@@ -118,7 +118,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .attr('xlink:href', d => `#arc-top-${d.id}`)
           .attr('startOffset', '50%')
           .style('text-anchor', 'middle')
-          .text(d => this.splitName(d.profile_name || d.profile_name_searchable)[0])
+          .text(d => this.splitName(d.mbti_profile || "")[0])
           .attr('fill', d => this.getColorForCategory(d.category));
 
         const bottomText = this.nodeElements.append('text')
@@ -130,15 +130,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           .attr('xlink:href', d => `#arc-bottom-${d.id}`)
           .attr('startOffset', '50%')
           .style('text-anchor', 'middle')
-          .text(d => this.splitName(d.profile_name || d.profile_name_searchable)[1])
+          .text(d => this.splitName(d.mbti_profile || "")[1])
           .attr('fill', d => this.getColorForCategory(d.category));
-
-        this.nodeElements.append('text')
-          .text(d => d.mbti_profile)
-          .attr('dy', -(this.bubbleRadius + 7))
-          .attr('text-anchor', 'middle')
-          .attr('fill', d => this.getColorForCategory(d.category))
-          .style('font-size', '12px');
 
         this.npcService.simulation.on('tick', () => {
           this.nodeElements.attr('transform', (d: any) =>
@@ -379,7 +372,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
   private makeArcPath(isTop: boolean): string {
     const r = this.bubbleRadius + this.nameMargin;
-    const sweep = isTop ? 0 : 1;
+    const sweep = isTop ? 1 : 0;
     return `M -${r},0 A ${r} ${r} 0 0 ${sweep} ${r},0`;
   }
 }

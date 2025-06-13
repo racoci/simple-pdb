@@ -73,10 +73,8 @@ export class NpcSimulationService {
   addNpc( profile: ProfileResponse): void {
     const newNode: NpcNode = { ...profile };
     // Prefer the display name and capitalize each word for readability
-    if (newNode.profile_name) {
-      newNode.profile_name = this.toTitleCase(newNode.profile_name);
-    } else if (newNode.profile_name_searchable) {
-      newNode.profile_name = this.toTitleCase(newNode.profile_name_searchable);
+    if (!newNode.profile_name && newNode.profile_name_searchable) {
+      newNode.profile_name = newNode.profile_name_searchable;
     }
     if (!newNode.profile_name_searchable && newNode.profile_name) {
       newNode.profile_name_searchable = newNode.profile_name.toLowerCase();
@@ -117,9 +115,5 @@ export class NpcSimulationService {
       if (typeA[i] === typeB[i]) count++;
     }
     return count;
-  }
-
-  private toTitleCase(name: string): string {
-    return name.replace(/\b\w/g, c => c.toUpperCase());
   }
 }
