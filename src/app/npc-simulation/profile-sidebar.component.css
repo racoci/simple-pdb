@@ -10,10 +10,18 @@
   color: #f0f0f0;
 }
 
-img {
-  width: 100%;
-  border-radius: 4px;
+
+.profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
+}
+
+.profile-image {
+  width: 80px;
+  height: auto;
+  border-radius: 4px;
 }
 
 .system-votes {
