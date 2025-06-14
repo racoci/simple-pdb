@@ -8,11 +8,12 @@ import {ProfileService} from '../personality/profile/services/profile.service';
 import {ProfileResponse} from '../personality/profile/models/profile-response.model';
 import {SearchResponseProfile} from '../personality/profile/models/search-response.model';
 import { Subscription } from 'rxjs';
+import { ProfileSidebarComponent } from './profile-sidebar.component';
 
 @Component({
   selector: 'app-npc-simulation',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ProfileSidebarComponent],
   templateUrl: './npc-simulation.component.html',
   styleUrls: ['./npc-simulation.component.css']
 })
@@ -36,7 +37,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   private searchSub?: Subscription;
 
   hoveredProfile: ProfileResponse | null = null;
-  @ViewChild('sidebar') sidebar?: ElementRef<HTMLDivElement>;
+  @ViewChild('sidebar', { read: ElementRef }) sidebar?: ElementRef<HTMLElement>;
+  sidebarWidth = 300;
   private isResizing = false;
   private resizeStart = 0;
   private sidebarStartWidth = 0;
@@ -187,7 +189,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     }
     this.isResizing = true;
     this.resizeStart = event.clientX;
-    this.sidebarStartWidth = this.sidebar.nativeElement.offsetWidth;
+    this.sidebarStartWidth = this.sidebarWidth;
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.stopResize);
   }
@@ -199,7 +201,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     const dx = this.resizeStart - event.clientX;
     let newWidth = this.sidebarStartWidth + dx;
     newWidth = Math.min(Math.max(newWidth, 200), 500);
-    this.sidebar.nativeElement.style.width = `${newWidth}px`;
+    this.sidebarWidth = newWidth;
   };
 
   private stopResize = (): void => {
