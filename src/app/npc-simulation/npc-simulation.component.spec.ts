@@ -20,7 +20,7 @@ describe('NpcSimulationComponent', () => {
       getNodes: () => [],
       addNpc: () => {},
       stopSimulation: () => {}
-    } as NpcSimulationService;
+    } as unknown as NpcSimulationService;
 
     await TestBed.configureTestingModule({
       imports: [NpcSimulationComponent, RouterTestingModule],
