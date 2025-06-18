@@ -57,7 +57,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
         .width(this.width)
         .height(this.height)
         .backgroundColor('#000')
-        .nodeThreeObject((node: any) => this.createNodeObject(node as NpcNode))
+        .nodeThreeObject((node: NpcNode) => this.createNodeObject(node))
+        .enableNodeDrag(false)
         .onNodeClick((node: any) => {
           const profile = node as NpcNode;
           this.ngZone.run(() => {
@@ -331,7 +332,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     }
 
     const texture = new THREE.CanvasTexture(canvas);
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: texture, transparent: true })
+    );
     sprite.scale.set(size, size, 1);
     group.add(sprite);
 
