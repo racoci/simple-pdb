@@ -302,17 +302,40 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   }
 
   private createNodeObject(node: NpcNode): THREE.Object3D {
+    if ((node as any).__obj) {
+      return (node as any).__obj;
+    }
+
     const group = new THREE.Group();
 
-    const size = (this.bubbleRadius + this.nameMargin + 6) * 2;
+    const displaySize = (this.bubbleRadius + this.nameMargin + 6) * 2;
+    const canvasSize = 256; // higher resolution to avoid pixelation when zoomed
     const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
     const ctx = canvas.getContext('2d')!;
 
-    const center = size / 2;
+    const center = canvasSize / 2;
 
-    const finalize = () => {
+    const render = (img?: HTMLImageElement) => {
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+      if (img) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(center, center, this.bubbleRadius, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(
+          img,
+          center - this.bubbleRadius,
+          center - this.bubbleRadius,
+          this.bubbleRadius * 2,
+          this.bubbleRadius * 2
+        );
+        ctx.restore();
+      }
+
       ctx.lineWidth = 2;
       ctx.strokeStyle = this.getColorForCategory(node.category);
       ctx.beginPath();
@@ -321,47 +344,36 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
       const [top, bottom] = this.splitName(node.mbti_profile || '');
       ctx.fillStyle = this.getColorForCategory(node.category);
-      ctx.font = '12px sans-serif';
+      ctx.font = '16px sans-serif';
       ctx.textAlign = 'center';
       this.drawArcText(ctx, top, this.bubbleRadius + this.nameMargin, Math.PI, 0);
       if (bottom) {
         this.drawArcText(ctx, bottom, this.bubbleRadius + this.nameMargin, 0, Math.PI);
       }
+
       texture.needsUpdate = true;
     };
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(center, center, this.bubbleRadius, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(
-        img,
-        center - this.bubbleRadius,
-        center - this.bubbleRadius,
-        this.bubbleRadius * 2,
-        this.bubbleRadius * 2
-      );
-      ctx.restore();
-      finalize();
-    };
-
     const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false })
     );
-    sprite.scale.set(size, size, 1);
+    sprite.scale.set(displaySize, displaySize, 1);
     group.add(sprite);
 
     if (node.profile_image_url) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => render(img);
       img.src = node.profile_image_url;
     } else {
-      finalize();
+      render();
     }
 
+    (node as any).__obj = group;
     return group;
   }
 
