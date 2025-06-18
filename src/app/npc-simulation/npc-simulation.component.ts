@@ -2,7 +2,9 @@ import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } fr
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import * as d3 from 'd3';
+import ForceGraph3D from '3d-force-graph';
+import * as THREE from 'three';
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import {NpcNode, NpcSimulationService} from './services/npc-simulation.service';
 import {ProfileService} from '../personality/profile/services/profile.service';
 import {ProfileResponse} from '../personality/profile/models/profile-response.model';
@@ -18,12 +20,10 @@ import { ProfileSidebarComponent } from './profile-sidebar.component';
   styleUrls: ['./npc-simulation.component.css']
 })
 export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('svgContainer', { static: true }) svgContainer!: ElementRef<SVGSVGElement>;
+  @ViewChild('graphContainer', { static: true }) graphContainer!: ElementRef<HTMLDivElement>;
 
-  private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-  private zoomGroup!: d3.Selection<SVGGElement, unknown, null, undefined>;
-  private zoomBehavior!: d3.ZoomBehavior<SVGSVGElement, unknown>;
-  private nodeElements!: d3.Selection<SVGGElement, NpcNode, SVGGElement, unknown>;
+  private graph: any;
+  private labelRenderer!: CSS2DRenderer;
 
   private readonly bubbleRadius = 25;
   private readonly nameMargin = 4;
@@ -52,101 +52,44 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {
-      this.svg = d3.select(this.svgContainer.nativeElement);
-      this.width = this.svgContainer.nativeElement.clientWidth;
-      this.height = this.svgContainer.nativeElement.clientHeight;
-      this.svg.attr('width', this.width).attr('height', this.height);
+      this.width = this.graphContainer.nativeElement.clientWidth;
+      this.height = this.graphContainer.nativeElement.clientHeight;
 
-      this.zoomGroup = this.svg.append('g');
-      this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.5, 5])
-        .on('zoom', (event) => {
-          this.zoomGroup.attr('transform', event.transform);
+      this.labelRenderer = new CSS2DRenderer();
+      this.labelRenderer.setSize(this.width, this.height);
+      this.labelRenderer.domElement.style.position = 'absolute';
+      this.labelRenderer.domElement.style.top = '0';
+      this.labelRenderer.domElement.style.pointerEvents = 'none';
+      this.graphContainer.nativeElement.appendChild(this.labelRenderer.domElement);
+
+      this.graph = new ForceGraph3D(this.graphContainer.nativeElement, {
+        extraRenderers: [this.labelRenderer]
+      })
+        .width(this.width)
+        .height(this.height)
+        .backgroundColor('#000')
+        .nodeThreeObject((node: NpcNode) => this.createNodeObject(node))
+        .nodeThreeObjectExtend(true)
+        .enableNodeDrag(false)
+        .onNodeClick((node: any) => {
+          const profile = node as NpcNode;
+          this.ngZone.run(() => {
+            this.profileService
+              .fetchProfile(String(profile.id))
+              .subscribe(p => (this.hoveredProfile = p));
+          });
         });
 
-      this.svg.call(this.zoomBehavior as any);
+      this.graph.onRenderFrame(() => this.updateRingOrientation());
+
+      this.graph.d3Force('link')?.distance((l: any) => l['distance']);
 
       this.npcService.simulationReady$.subscribe(() => {
-        const nodes = this.npcService.getNodes();
-
-        this.nodeElements = this.zoomGroup.selectAll<SVGGElement, NpcNode>('g')
-          .data(nodes, (d: NpcNode) => String(d.id))
-          .enter()
-          .append('g')
-          .attr('class', 'npc-node')
-          .on('click', (_event, node) => {
-            const profile = node;
-            if (profile) {
-              this.ngZone.run(() => {
-                this.profileService
-                  .fetchProfile(String(node.id))
-                  .subscribe(profile => (this.hoveredProfile = profile));
-              });
-            }
-          });
-
-        this.nodeElements.append('defs')
-          .append('clipPath')
-          .attr('id', d => `clip-${d.id}`)
-          .append('circle')
-          .attr('r', this.bubbleRadius)
-          .attr('cx', 0)
-          .attr('cy', 0);
-
-        this.nodeElements.append('image')
-          .attr('xlink:href', d => d.profile_image_url ?? '')
-          .attr('x', -this.bubbleRadius)
-          .attr('y', -this.bubbleRadius)
-          .attr('width', this.bubbleRadius * 2)
-          .attr('height', this.bubbleRadius * 2)
-          .attr('clip-path', d => `url(#clip-${d.id})`);
-
-        this.nodeElements.append('circle')
-          .attr('r', this.bubbleRadius)
-          .attr('fill', 'none')
-          .attr('stroke-width', 2)
-          .attr('stroke', d => this.getColorForCategory(d.category));
-
-        this.nodeElements.append('path')
-          .attr('id', d => `arc-top-${d.id}`)
-          .attr('d', this.makeArcPath(true))
-          .attr('fill', 'none');
-
-        this.nodeElements.append('path')
-          .attr('id', d => `arc-bottom-${d.id}`)
-          .attr('d', this.makeArcPath(false))
-          .attr('fill', 'none');
-
-        const topText = this.nodeElements.append('text')
-          .attr('class', 'name-top')
-          // pull text slightly upward for visual balance
-          .attr('dy', '-0.3em');
-
-        topText.append('textPath')
-          .attr('xlink:href', d => `#arc-top-${d.id}`)
-          .attr('startOffset', '50%')
-          .style('text-anchor', 'middle')
-          .text(d => this.splitName(d.mbti_profile || "")[0])
-          .attr('fill', d => this.getColorForCategory(d.category));
-
-        const bottomText = this.nodeElements.append('text')
-          .attr('class', 'name-bottom')
-          // push text slightly downward so it clears the bubble
-          .attr('dy', '0.8em');
-
-        bottomText.append('textPath')
-          .attr('xlink:href', d => `#arc-bottom-${d.id}`)
-          .attr('startOffset', '50%')
-          .style('text-anchor', 'middle')
-          .text(d => this.splitName(d.mbti_profile || "")[1])
-          .attr('fill', d => this.getColorForCategory(d.category));
-
-        this.npcService.simulation.on('tick', () => {
-          this.nodeElements.attr('transform', (d: any) =>
-            `translate(${d.x}, ${d.y})`
-          );
-          this.adjustFontSize();
+        this.graph.graphData({
+          nodes: this.npcService.getNodes(),
+          links: this.npcService.getLinks()
         });
+        this.filterNodes();
       });
 
       this.npcService.initSimulation(this.width, this.height);
@@ -155,31 +98,29 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   }
 
   private onResize(): void {
-    const newWidth = this.svgContainer.nativeElement.clientWidth;
-    const newHeight = this.svgContainer.nativeElement.clientHeight;
+    const newWidth = this.graphContainer.nativeElement.clientWidth;
+    const newHeight = this.graphContainer.nativeElement.clientHeight;
     this.width = newWidth;
     this.height = newHeight;
-    this.svg.attr('width', newWidth).attr('height', newHeight);
-
-    if (this.npcService.simulation) {
-      const centerForce = this.npcService.simulation.force<d3.ForceCenter<NpcNode>>('center');
-      if (centerForce) {
-        centerForce.x(newWidth / 2);
-        centerForce.y(newHeight / 2);
-      }
-      this.npcService.simulation.alpha(1).restart();
+    if (this.graph) {
+      this.graph.width(newWidth).height(newHeight);
+    }
+    if (this.labelRenderer) {
+      this.labelRenderer.setSize(newWidth, newHeight);
     }
   }
 
   zoomIn(): void {
-    if (this.zoomBehavior) {
-      this.svg.transition().call(this.zoomBehavior.scaleBy as any, 1.2);
+    if (this.graph) {
+      const pos = this.graph.cameraPosition();
+      this.graph.cameraPosition({ z: pos.z * 0.8 }, undefined, 300);
     }
   }
 
   zoomOut(): void {
-    if (this.zoomBehavior) {
-      this.svg.transition().call(this.zoomBehavior.scaleBy as any, 0.8);
+    if (this.graph) {
+      const pos = this.graph.cameraPosition();
+      this.graph.cameraPosition({ z: pos.z * 1.2 }, undefined, 300);
     }
   }
 
@@ -229,14 +170,13 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
   filterNodes(): void {
     const term = this.searchTerm.trim().toLowerCase();
-    if (!this.nodeElements) {
-      return;
+    if (this.graph) {
+      this.graph.nodeVisibility((d: NpcNode) => {
+        const mbti = d.mbti_profile?.toLowerCase() || '';
+        const name = d.profile_name_searchable?.toLowerCase() || '';
+        return !term || mbti.includes(term) || name.includes(term);
+      });
     }
-    this.nodeElements.style('display', d => {
-      const mbti = d.mbti_profile?.toLowerCase() || '';
-      const name = d.profile_name_searchable?.toLowerCase() || '';
-      return mbti.includes(term) || name.includes(term) ? null : 'none';
-    });
   }
 
   search(): void {
@@ -327,9 +267,6 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     if (this.searchSub) {
       this.searchSub.unsubscribe();
     }
-    if (this.npcService.simulation) {
-      this.npcService.stopSimulation();
-    }
   }
 
   getMbti(profile: SearchResponseProfile): string {
@@ -376,9 +313,138 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       case 'Ask Pdb': return '#e5c494';
       case 'PDB Community': return '#b3b3b3';
       case 'Nature': return '#a1d99b';
-      case 'Technology': return '#9ecae1';
-      default: return '#888888';
+    case 'Technology': return '#9ecae1';
+    default: return '#888888';
     }
+  }
+
+  private updateRingOrientation(): void {
+    if (!this.graph) {
+      return;
+    }
+    const camQuat = this.graph.camera().quaternion;
+    for (const node of this.npcService.getNodes()) {
+      const obj = (node as any).__obj as THREE.Object3D | undefined;
+      const ring = obj?.userData?.['ring'] as THREE.Mesh | undefined;
+      if (ring) {
+        ring.quaternion.copy(camQuat);
+      }
+    }
+  }
+
+  private createNodeObject(node: NpcNode): THREE.Object3D {
+    if ((node as any).__obj) {
+      return (node as any).__obj;
+    }
+
+    const group = new THREE.Group();
+
+    const imgSize = this.bubbleRadius * 2;
+    let texture: THREE.Texture | undefined;
+    if (node.profile_image_url) {
+      const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous');
+      texture = loader.load(node.profile_image_url);
+      texture.minFilter = THREE.LinearFilter;
+    }
+
+    const spriteMaterial = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false
+    });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.scale.set(imgSize, imgSize, 1);
+    group.add(sprite);
+
+    const ringGeom = new THREE.RingGeometry(
+      this.bubbleRadius + 0.8,
+      this.bubbleRadius + 1.6,
+      32
+    );
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: this.getColorForCategory(node.category),
+      side: THREE.DoubleSide
+    });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    group.add(ring);
+    (group.userData as any)['ring'] = ring;
+
+    const label = this.createLabelObject(node);
+    group.add(label);
+
+    (node as any).__obj = group;
+    return group;
+  }
+
+  private createLabelObject(node: NpcNode): CSS2DObject {
+    const [top, bottom] = this.splitName(node.mbti_profile || '');
+    const color = this.getColorForCategory(node.category);
+    const arcRadius = this.bubbleRadius + this.nameMargin + 6;
+    const size = (arcRadius + 2) * 2;
+
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('width', String(size));
+    svg.setAttribute('height', String(size));
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+
+    const defs = document.createElementNS(svgNs, 'defs');
+    const arcTop = document.createElementNS(svgNs, 'path');
+    arcTop.setAttribute('id', `arc-top-${node.id}`);
+    arcTop.setAttribute('d', this.describeArc(size / 2, size / 2, arcRadius, 180, 0));
+    defs.appendChild(arcTop);
+    const arcBottom = document.createElementNS(svgNs, 'path');
+    arcBottom.setAttribute('id', `arc-bottom-${node.id}`);
+    arcBottom.setAttribute('d', this.describeArc(size / 2, size / 2, arcRadius, 0, 180));
+    defs.appendChild(arcBottom);
+    svg.appendChild(defs);
+
+    const textTop = document.createElementNS(svgNs, 'text');
+    const textPathTop = document.createElementNS(svgNs, 'textPath');
+    textPathTop.setAttribute('href', `#arc-top-${node.id}`);
+    textPathTop.setAttribute('startOffset', '50%');
+    textPathTop.setAttribute('text-anchor', 'middle');
+    textPathTop.textContent = top;
+    textTop.setAttribute('fill', color);
+    textTop.appendChild(textPathTop);
+    svg.appendChild(textTop);
+
+    if (bottom) {
+      const textBottom = document.createElementNS(svgNs, 'text');
+      const textPathBottom = document.createElementNS(svgNs, 'textPath');
+      textPathBottom.setAttribute('href', `#arc-bottom-${node.id}`);
+      textPathBottom.setAttribute('startOffset', '50%');
+      textPathBottom.setAttribute('text-anchor', 'middle');
+      textPathBottom.textContent = bottom;
+      textBottom.setAttribute('fill', color);
+      textBottom.appendChild(textPathBottom);
+      svg.appendChild(textBottom);
+    }
+
+    const container = document.createElement('div');
+    container.className = 'npc-label';
+    container.appendChild(svg);
+
+    const labelObj = new CSS2DObject(container);
+    labelObj.position.set(0, 0, 0);
+    return labelObj;
+  }
+
+  private describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number): string {
+    const start = this.polarToCartesian(cx, cy, radius, endAngle);
+    const end = this.polarToCartesian(cx, cy, radius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+    const sweepFlag = startAngle > endAngle ? 0 : 1;
+    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x} ${end.y}`;
+  }
+
+  private polarToCartesian(cx: number, cy: number, radius: number, angle: number): { x: number; y: number } {
+    const rad = (angle - 90) * (Math.PI / 180);
+    return {
+      x: cx + radius * Math.cos(rad),
+      y: cy + radius * Math.sin(rad)
+    };
   }
 
   private splitName(name: string = ''): [string, string] {
@@ -401,19 +467,4 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     return [first, second];
   }
 
-  private adjustFontSize(): void {
-    const min = 8;
-    const max = 12;
-    this.nodeElements.each((d, i, nodes) => {
-      const dist = Math.min(d.x ?? 0, this.width - (d.x ?? 0));
-      const size = dist < 50 ? min + ((max - min) * dist) / 50 : max;
-      d3.select(nodes[i]).selectAll('text').style('font-size', `${size}px`);
-    });
-  }
-
-  private makeArcPath(isTop: boolean): string {
-    const r = this.bubbleRadius + this.nameMargin;
-    const sweep = isTop ? 1 : 0;
-    return `M -${r},0 A ${r} ${r} 0 0 ${sweep} ${r},0`;
-  }
 }
