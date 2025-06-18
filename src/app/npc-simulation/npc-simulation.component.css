@@ -74,3 +74,18 @@
 .zoom-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+.npc-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  font-family: sans-serif;
+  font-size: 12px;
+  text-align: center;
+  color: #fff;
+}
+
+.npc-label svg {
+  overflow: visible;
+}

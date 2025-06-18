@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import ForceGraph3D from '3d-force-graph';
 import * as THREE from 'three';
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import {NpcNode, NpcSimulationService} from './services/npc-simulation.service';
 import {ProfileService} from '../personality/profile/services/profile.service';
 import {ProfileResponse} from '../personality/profile/models/profile-response.model';
@@ -22,6 +23,7 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   @ViewChild('graphContainer', { static: true }) graphContainer!: ElementRef<HTMLDivElement>;
 
   private graph: any;
+  private labelRenderer!: CSS2DRenderer;
 
   private readonly bubbleRadius = 25;
   private readonly nameMargin = 4;
@@ -53,11 +55,21 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       this.width = this.graphContainer.nativeElement.clientWidth;
       this.height = this.graphContainer.nativeElement.clientHeight;
 
-      this.graph = new ForceGraph3D(this.graphContainer.nativeElement)
+      this.labelRenderer = new CSS2DRenderer();
+      this.labelRenderer.setSize(this.width, this.height);
+      this.labelRenderer.domElement.style.position = 'absolute';
+      this.labelRenderer.domElement.style.top = '0';
+      this.labelRenderer.domElement.style.pointerEvents = 'none';
+      this.graphContainer.nativeElement.appendChild(this.labelRenderer.domElement);
+
+      this.graph = new ForceGraph3D(this.graphContainer.nativeElement, {
+        extraRenderers: [this.labelRenderer]
+      })
         .width(this.width)
         .height(this.height)
         .backgroundColor('#000')
         .nodeThreeObject((node: NpcNode) => this.createNodeObject(node))
+        .nodeThreeObjectExtend(true)
         .enableNodeDrag(false)
         .onNodeClick((node: any) => {
           const profile = node as NpcNode;
@@ -90,6 +102,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     this.height = newHeight;
     if (this.graph) {
       this.graph.width(newWidth).height(newHeight);
+    }
+    if (this.labelRenderer) {
+      this.labelRenderer.setSize(newWidth, newHeight);
     }
   }
 
@@ -308,103 +323,109 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
     const group = new THREE.Group();
 
-    const displaySize = (this.bubbleRadius + this.nameMargin + 6) * 2;
-    const canvasSize = 256; // higher resolution to avoid pixelation when zoomed
-    const canvas = document.createElement('canvas');
-    canvas.width = canvasSize;
-    canvas.height = canvasSize;
-    const ctx = canvas.getContext('2d')!;
+    const imgSize = this.bubbleRadius * 2;
+    let texture: THREE.Texture | undefined;
+    if (node.profile_image_url) {
+      texture = new THREE.TextureLoader().load(node.profile_image_url);
+      texture.minFilter = THREE.LinearFilter;
+    }
 
-    const center = canvasSize / 2;
-
-    const render = (img?: HTMLImageElement) => {
-      ctx.clearRect(0, 0, canvasSize, canvasSize);
-
-      if (img) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(center, center, this.bubbleRadius, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(
-          img,
-          center - this.bubbleRadius,
-          center - this.bubbleRadius,
-          this.bubbleRadius * 2,
-          this.bubbleRadius * 2
-        );
-        ctx.restore();
-      }
-
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = this.getColorForCategory(node.category);
-      ctx.beginPath();
-      ctx.arc(center, center, this.bubbleRadius, 0, Math.PI * 2);
-      ctx.stroke();
-
-      const [top, bottom] = this.splitName(node.mbti_profile || '');
-      ctx.fillStyle = this.getColorForCategory(node.category);
-      ctx.font = '16px sans-serif';
-      ctx.textAlign = 'center';
-      this.drawArcText(ctx, top, this.bubbleRadius + this.nameMargin, Math.PI, 0);
-      if (bottom) {
-        this.drawArcText(ctx, bottom, this.bubbleRadius + this.nameMargin, 0, Math.PI);
-      }
-
-      texture.needsUpdate = true;
-    };
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false })
-    );
-    sprite.scale.set(displaySize, displaySize, 1);
+    const spriteMaterial = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false
+    });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.scale.set(imgSize, imgSize, 1);
     group.add(sprite);
 
-    if (node.profile_image_url) {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => render(img);
-      img.src = node.profile_image_url;
-    } else {
-      render();
-    }
+    const ringGeom = new THREE.RingGeometry(
+      this.bubbleRadius + 0.8,
+      this.bubbleRadius + 1.6,
+      32
+    );
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: this.getColorForCategory(node.category),
+      side: THREE.DoubleSide
+    });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+
+    const label = this.createLabelObject(node);
+    group.add(label);
 
     (node as any).__obj = group;
     return group;
   }
 
-  private drawArcText(
-    ctx: CanvasRenderingContext2D,
-    text: string,
-    radius: number,
-    startAngle: number,
-    endAngle: number
-  ): void {
-    const chars = [...text];
-    if (chars.length === 0) {
-      return;
+  private createLabelObject(node: NpcNode): CSS2DObject {
+    const [top, bottom] = this.splitName(node.mbti_profile || '');
+    const color = this.getColorForCategory(node.category);
+    const size = (this.bubbleRadius + this.nameMargin + 6) * 2;
+
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('width', String(size));
+    svg.setAttribute('height', String(size));
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+
+    const defs = document.createElementNS(svgNs, 'defs');
+    const arcTop = document.createElementNS(svgNs, 'path');
+    arcTop.setAttribute('id', `arc-top-${node.id}`);
+    arcTop.setAttribute('d', this.describeArc(size / 2, size / 2, this.bubbleRadius + this.nameMargin, 180, 0));
+    defs.appendChild(arcTop);
+    const arcBottom = document.createElementNS(svgNs, 'path');
+    arcBottom.setAttribute('id', `arc-bottom-${node.id}`);
+    arcBottom.setAttribute('d', this.describeArc(size / 2, size / 2, this.bubbleRadius + this.nameMargin, 0, 180));
+    defs.appendChild(arcBottom);
+    svg.appendChild(defs);
+
+    const textTop = document.createElementNS(svgNs, 'text');
+    const textPathTop = document.createElementNS(svgNs, 'textPath');
+    textPathTop.setAttribute('href', `#arc-top-${node.id}`);
+    textPathTop.setAttribute('startOffset', '50%');
+    textPathTop.setAttribute('text-anchor', 'middle');
+    textPathTop.textContent = top;
+    textTop.setAttribute('fill', color);
+    textTop.appendChild(textPathTop);
+    svg.appendChild(textTop);
+
+    if (bottom) {
+      const textBottom = document.createElementNS(svgNs, 'text');
+      const textPathBottom = document.createElementNS(svgNs, 'textPath');
+      textPathBottom.setAttribute('href', `#arc-bottom-${node.id}`);
+      textPathBottom.setAttribute('startOffset', '50%');
+      textPathBottom.setAttribute('text-anchor', 'middle');
+      textPathBottom.textContent = bottom;
+      textBottom.setAttribute('fill', color);
+      textBottom.appendChild(textPathBottom);
+      svg.appendChild(textBottom);
     }
-    const centerX = ctx.canvas.width / 2;
-    const centerY = ctx.canvas.height / 2;
-    const angleRange = endAngle - startAngle;
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.rotate(startAngle);
-    const step = angleRange / chars.length;
-    for (let i = 0; i < chars.length; i++) {
-      ctx.rotate(step / 2);
-      ctx.save();
-      ctx.translate(0, -radius);
-      ctx.rotate(Math.PI / 2);
-      ctx.fillText(chars[i], 0, 0);
-      ctx.restore();
-      ctx.rotate(step / 2);
-    }
-    ctx.restore();
+
+    const container = document.createElement('div');
+    container.className = 'npc-label';
+    container.appendChild(svg);
+
+    const labelObj = new CSS2DObject(container);
+    labelObj.position.set(0, 0, 0);
+    return labelObj;
+  }
+
+  private describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number): string {
+    const start = this.polarToCartesian(cx, cy, radius, endAngle);
+    const end = this.polarToCartesian(cx, cy, radius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+    const sweepFlag = startAngle > endAngle ? 0 : 1;
+    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x} ${end.y}`;
+  }
+
+  private polarToCartesian(cx: number, cy: number, radius: number, angle: number): { x: number; y: number } {
+    const rad = (angle - 90) * (Math.PI / 180);
+    return {
+      x: cx + radius * Math.cos(rad),
+      y: cy + radius * Math.sin(rad)
+    };
   }
 
   private splitName(name: string = ''): [string, string] {
