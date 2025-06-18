@@ -80,6 +80,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
           });
         });
 
+      this.graph.onRenderFrame(() => this.updateRingOrientation());
+
       this.graph.d3Force('link')?.distance((l: any) => l['distance']);
 
       this.npcService.simulationReady$.subscribe(() => {
@@ -316,6 +318,20 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  private updateRingOrientation(): void {
+    if (!this.graph) {
+      return;
+    }
+    const camQuat = this.graph.camera().quaternion;
+    for (const node of this.npcService.getNodes()) {
+      const obj = (node as any).__obj as THREE.Object3D | undefined;
+      const ring = obj?.userData?.['ring'] as THREE.Mesh | undefined;
+      if (ring) {
+        ring.quaternion.copy(camQuat);
+      }
+    }
+  }
+
   private createNodeObject(node: NpcNode): THREE.Object3D {
     if ((node as any).__obj) {
       return (node as any).__obj;
@@ -326,7 +342,9 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     const imgSize = this.bubbleRadius * 2;
     let texture: THREE.Texture | undefined;
     if (node.profile_image_url) {
-      texture = new THREE.TextureLoader().load(node.profile_image_url);
+      const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous');
+      texture = loader.load(node.profile_image_url);
       texture.minFilter = THREE.LinearFilter;
     }
 
@@ -349,8 +367,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       side: THREE.DoubleSide
     });
     const ring = new THREE.Mesh(ringGeom, ringMat);
-    ring.rotation.x = Math.PI / 2;
     group.add(ring);
+    (group.userData as any)['ring'] = ring;
 
     const label = this.createLabelObject(node);
     group.add(label);
@@ -362,7 +380,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   private createLabelObject(node: NpcNode): CSS2DObject {
     const [top, bottom] = this.splitName(node.mbti_profile || '');
     const color = this.getColorForCategory(node.category);
-    const size = (this.bubbleRadius + this.nameMargin + 6) * 2;
+    const arcRadius = this.bubbleRadius + this.nameMargin + 6;
+    const size = (arcRadius + 2) * 2;
 
     const svgNs = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNs, 'svg');
@@ -373,11 +392,11 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     const defs = document.createElementNS(svgNs, 'defs');
     const arcTop = document.createElementNS(svgNs, 'path');
     arcTop.setAttribute('id', `arc-top-${node.id}`);
-    arcTop.setAttribute('d', this.describeArc(size / 2, size / 2, this.bubbleRadius + this.nameMargin, 180, 0));
+    arcTop.setAttribute('d', this.describeArc(size / 2, size / 2, arcRadius, 180, 0));
     defs.appendChild(arcTop);
     const arcBottom = document.createElementNS(svgNs, 'path');
     arcBottom.setAttribute('id', `arc-bottom-${node.id}`);
-    arcBottom.setAttribute('d', this.describeArc(size / 2, size / 2, this.bubbleRadius + this.nameMargin, 0, 180));
+    arcBottom.setAttribute('d', this.describeArc(size / 2, size / 2, arcRadius, 0, 180));
     defs.appendChild(arcBottom);
     svg.appendChild(defs);
 
