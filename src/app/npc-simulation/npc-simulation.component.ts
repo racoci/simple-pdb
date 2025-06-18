@@ -304,57 +304,95 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
   private createNodeObject(node: NpcNode): THREE.Object3D {
     const group = new THREE.Group();
 
-    const size = this.bubbleRadius * 2;
+    const size = (this.bubbleRadius + this.nameMargin + 6) * 2;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d')!;
+
+    const center = size / 2;
+
+    const finalize = () => {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = this.getColorForCategory(node.category);
+      ctx.beginPath();
+      ctx.arc(center, center, this.bubbleRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const [top, bottom] = this.splitName(node.mbti_profile || '');
+      ctx.fillStyle = this.getColorForCategory(node.category);
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      this.drawArcText(ctx, top, this.bubbleRadius + this.nameMargin, Math.PI, 0);
+      if (bottom) {
+        this.drawArcText(ctx, bottom, this.bubbleRadius + this.nameMargin, 0, Math.PI);
+      }
+      texture.needsUpdate = true;
+    };
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(this.bubbleRadius, this.bubbleRadius, this.bubbleRadius, 0, Math.PI * 2);
+      ctx.arc(center, center, this.bubbleRadius, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(img, 0, 0, size, size);
+      ctx.drawImage(
+        img,
+        center - this.bubbleRadius,
+        center - this.bubbleRadius,
+        this.bubbleRadius * 2,
+        this.bubbleRadius * 2
+      );
       ctx.restore();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = this.getColorForCategory(node.category);
-      ctx.beginPath();
-      ctx.arc(this.bubbleRadius, this.bubbleRadius, this.bubbleRadius - 1, 0, Math.PI * 2);
-      ctx.stroke();
-      texture.needsUpdate = true;
+      finalize();
     };
-    if (node.profile_image_url) {
-      img.src = node.profile_image_url;
-    }
 
     const texture = new THREE.CanvasTexture(canvas);
     const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: texture, transparent: true })
+      new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false })
     );
     sprite.scale.set(size, size, 1);
     group.add(sprite);
 
-    const [top, bottom] = this.splitName(node.mbti_profile || '');
-    const labelCanvas = document.createElement('canvas');
-    labelCanvas.width = 128;
-    labelCanvas.height = 32;
-    const lctx = labelCanvas.getContext('2d')!;
-    lctx.fillStyle = this.getColorForCategory(node.category);
-    lctx.font = '12px sans-serif';
-    lctx.textAlign = 'center';
-    lctx.fillText(top, labelCanvas.width / 2, 12);
-    lctx.fillText(bottom, labelCanvas.width / 2, 28);
-    const labelTexture = new THREE.CanvasTexture(labelCanvas);
-    const labelSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture, transparent: true }));
-    labelSprite.scale.set(30, 8, 1);
-    labelSprite.position.set(0, this.bubbleRadius + 6, 0);
-    group.add(labelSprite);
+    if (node.profile_image_url) {
+      img.src = node.profile_image_url;
+    } else {
+      finalize();
+    }
 
     return group;
+  }
+
+  private drawArcText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    radius: number,
+    startAngle: number,
+    endAngle: number
+  ): void {
+    const chars = [...text];
+    if (chars.length === 0) {
+      return;
+    }
+    const centerX = ctx.canvas.width / 2;
+    const centerY = ctx.canvas.height / 2;
+    const angleRange = endAngle - startAngle;
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(startAngle);
+    const step = angleRange / chars.length;
+    for (let i = 0; i < chars.length; i++) {
+      ctx.rotate(step / 2);
+      ctx.save();
+      ctx.translate(0, -radius);
+      ctx.rotate(Math.PI / 2);
+      ctx.fillText(chars[i], 0, 0);
+      ctx.restore();
+      ctx.rotate(step / 2);
+    }
+    ctx.restore();
   }
 
   private splitName(name: string = ''): [string, string] {
