@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ProfileResponse } from '../personality/profile/models/profile-response.model';
+import { ProfileResponse } from '../../personality/profile/models/profile-response.model';
 
 @Component({
   selector: 'app-profile-sidebar',

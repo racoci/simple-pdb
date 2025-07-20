@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ProfileSidebarComponent } from './profile-sidebar.component';
-import { ProfileResponse } from '../personality/profile/models/profile-response.model';
+import { ProfileResponse } from '../../personality/profile/models/profile-response.model';
 
 describe('ProfileSidebarComponent', () => {
   let component: ProfileSidebarComponent;

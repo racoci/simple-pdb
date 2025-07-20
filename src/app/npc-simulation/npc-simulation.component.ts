@@ -8,7 +8,7 @@ import {ProfileService} from '../personality/profile/services/profile.service';
 import {ProfileResponse} from '../personality/profile/models/profile-response.model';
 import {SearchResponseProfile} from '../personality/profile/models/search-response.model';
 import { Subscription } from 'rxjs';
-import { ProfileSidebarComponent } from './profile-sidebar.component';
+import { ProfileSidebarComponent } from './profile-sidebar/profile-sidebar.component';
 
 @Component({
   selector: 'app-npc-simulation',
@@ -305,15 +305,39 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
       category_is_fictional: false,
       sub_cat_id: +profile.subcatID,
       subcategory: profile.subcategory,
-      subcat_link_info: { sub_cat_id: 0, cat_id: 0, property_id: 0, subcategory: '' },
+      subcat_link_info: {sub_cat_id: 0, cat_id: 0, property_id: 0, subcategory: ''},
       related_subcat_link_info: [],
       related_profiles: [],
       functions: [],
       systems: [],
       breakdown_systems: {},
-      breakdown_config: { expand: {}, fire: {} },
+      breakdown_config: {expand: {}, fire: {}},
       mbti_letter_stats: [],
-      topic_info: { can_generate: false, topic: { description: '', follow_count: 0, post_count: 0, topic_id: 0, topic_name: '', id: 0, is_following: false, is_join_pending: false, is_banned: false, is_moderated: false, name_readable: '', source_profile_id: 0, source_type: '', join_to_post: false, can_pin: false, related_topics: [] }, topic_image_url: '', source_location: { cid: 0, pid: 0, sub_cat_id: 0 }, can_post_image: false, can_post_audio: false, posts: { posts: [] } },
+      topic_info: {can_generate: false,
+        topic: {
+          description: '',
+          follow_count: 0,
+          post_count: 0,
+          topic_id: 0,
+          topic_name: '',
+          id: 0,
+          is_following: false,
+          is_join_pending: false,
+          is_banned: false,
+          is_moderated: false,
+          name_readable: '',
+          source_profile_id: 0,
+          source_type: '',
+          join_to_post: false,
+          can_pin: false,
+          related_topics: []
+        },
+        topic_image_url: '',
+        source_location: {cid: 0, pid: 0, sub_cat_id: 0},
+        can_post_image: false,
+        can_post_audio: false,
+        posts: {posts: []}
+      },
       self_reported_mbti: null,
     } as ProfileResponse;
 
