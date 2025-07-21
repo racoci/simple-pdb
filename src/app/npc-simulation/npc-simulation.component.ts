@@ -53,6 +53,8 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
     private router: Router
   ) {}
 
+  private loadedNodes: NpcOrAddNode[] = [];
+
   ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {
       this.svg = d3.select(this.svgContainer.nativeElement);
@@ -69,194 +71,208 @@ export class NpcSimulationComponent implements AfterViewInit, OnDestroy {
 
       this.svg.call(this.zoomBehavior as any);
 
+      // Subscribe to each node as it's loaded
+      this.npcService.nodeAdded$.subscribe((node) => {
+        this.loadedNodes.push(node);
+        this.updateNodes();
+      });
+
       this.npcService.simulationReady$.subscribe(() => {
-        let nodes: NpcOrAddNode[] = this.npcService.getNodes();
-        // Add a special node for 'Add Character'
-        const addNode: NpcOrAddNode = {
-          id: -1,
-          property_id: -1,
-          mbti_profile: '',
-          profile_name: 'Add Character',
-          profile_name_searchable: 'add character',
-          allow_commenting: false,
-          allow_voting: false,
-          user_id: -1,
-          contributor: '',
-          contributor_create_date: '',
-          contributor_pic_path: '',
-          display_order: 0,
-          edit_lock: 0,
-          edit_lock_picture: 0,
-          is_active: false,
-          is_approved: false,
-          mbti_enneagram_type: '',
-          mbti_type: '',
-          pdb_comment_access: false,
-          pdb_page_owner: -1,
-          pdb_public_access: false,
-          wiki_description: '',
-          wiki_description_html: '',
-          watch_count: 0,
-          comment_count: 0,
-          vote_count: 0,
-          vote_count_enneagram: 0,
-          vote_count_mbti: 0,
-          total_vote_counts: 0,
-          personality_type: '',
-          type_updated_date: '',
-          enneagram_vote: '',
-          enneagram_vote_id: 0,
-          mbti_vote: '',
-          mbti_vote_id: 0,
-          is_watching: false,
-          image_exists: false,
-          profile_image_url: '',
-          profile_image_credit: '',
-          profile_image_credit_id: 0,
-          profile_image_credit_type: '',
-          profile_image_credit_url: '',
-          alt_subcategory: '',
-          related_subcategories: '',
-          cat_id: 0,
-          category: 'add',
-          category_is_fictional: false,
-          sub_cat_id: 0,
-          subcategory: '',
-          subcat_link_info: { sub_cat_id: 0, cat_id: 0, property_id: 0, subcategory: '' },
-          related_subcat_link_info: [],
-          related_profiles: [],
-          functions: [],
-          systems: [],
-          breakdown_systems: {},
-          breakdown_config: { expand: {}, fire: {} },
-          mbti_letter_stats: [],
-          topic_info: {
-            can_generate: false,
-            topic: {
-              description: '', follow_count: 0, id: 0, is_following: false, is_join_pending: false, is_banned: false, is_moderated: false, name_readable: '', post_count: 0, source_profile_id: 0, source_type: '', join_to_post: false, can_pin: false, related_topics: []
-            },
-            topic_image_url: '',
-            source_location: { cid: 0, pid: 0, sub_cat_id: 0 },
-            can_post_image: false,
-            can_post_audio: false,
-            posts: { posts: [] }
-          },
-          self_reported_mbti: null,
-          isAddNode: true,
-          x: this.width / 2,
-          y: this.height / 2
-        };
-        nodes = [...nodes, addNode];
-
-        this.nodeElements = this.zoomGroup.selectAll<SVGGElement, NpcOrAddNode>('g')
-          .data(nodes, (d: NpcOrAddNode) => String(d.id))
-          .enter()
-          .append('g')
-          .attr('class', d => d.isAddNode ? 'npc-node add-node' : 'npc-node')
-          .on('click', (_event, node: NpcOrAddNode) => {
-            if (node.isAddNode) {
-              this.ngZone.run(() => {
-                this.router.navigate(['/profile-selector']);
-              });
-            } else {
-              const profile = node;
-              if (profile) {
-                this.ngZone.run(() => {
-                  this.profileService
-                    .fetchProfile(String(node.id))
-                    .subscribe(profile => (this.hoveredProfile = profile));
-                });
-              }
-            }
-          });
-
-        // Render normal nodes
-        this.nodeElements.filter((d: any) => !d.isAddNode)
-          .append('defs')
-          .append('clipPath')
-          .attr('id', d => `clip-${d.id}`)
-          .append('circle')
-          .attr('r', this.bubbleRadius)
-          .attr('cx', 0)
-          .attr('cy', 0);
-
-        this.nodeElements.filter((d: any) => !d.isAddNode)
-          .append('image')
-          .attr('xlink:href', d => d.profile_image_url ?? '')
-          .attr('x', -this.bubbleRadius)
-          .attr('y', -this.bubbleRadius)
-          .attr('width', this.bubbleRadius * 2)
-          .attr('height', this.bubbleRadius * 2)
-          .attr('clip-path', d => `url(#clip-${d.id})`);
-
-        this.nodeElements.filter((d: any) => !d.isAddNode)
-          .append('circle')
-          .attr('r', this.bubbleRadius)
-          .attr('fill', 'none')
-          .attr('stroke-width', 2)
-          .attr('stroke', d => this.getColorForCategory(d.category));
-
-        this.nodeElements.filter((d: any) => !d.isAddNode)
-          .append('path')
-          .attr('id', d => `arc-top-${d.id}`)
-          .attr('d', this.makeArcPath(true))
-          .attr('fill', 'none');
-
-        this.nodeElements.filter((d: any) => !d.isAddNode)
-          .append('path')
-          .attr('id', d => `arc-bottom-${d.id}`)
-          .attr('d', this.makeArcPath(false))
-          .attr('fill', 'none');
-
-        const topText = this.nodeElements.filter((d: any) => !d.isAddNode)
-          .append('text')
-          .attr('class', 'name-top')
-          .attr('dy', '-0.3em');
-
-        topText.append('textPath')
-          .attr('xlink:href', d => `#arc-top-${d.id}`)
-          .attr('startOffset', '50%')
-          .style('text-anchor', 'middle')
-          .text(d => this.splitName(d.mbti_profile || "")[0])
-          .attr('fill', d => this.getColorForCategory(d.category));
-
-        const bottomText = this.nodeElements.filter((d: any) => !d.isAddNode)
-          .append('text')
-          .attr('class', 'name-bottom')
-          .attr('dy', '0.8em');
-
-        bottomText.append('textPath')
-          .attr('xlink:href', d => `#arc-bottom-${d.id}`)
-          .attr('startOffset', '50%')
-          .style('text-anchor', 'middle')
-          .text(d => this.splitName(d.mbti_profile || "")[1])
-          .attr('fill', d => this.getColorForCategory(d.category));
-
-        // Render the special add node
-        const addNodeSel = this.nodeElements.filter((d: any) => d.isAddNode);
-        addNodeSel.append('circle')
-          .attr('r', this.bubbleRadius)
-          .attr('fill', '#fff')
-          .attr('stroke', '#1976d2')
-          .attr('stroke-width', 3);
-        addNodeSel.append('text')
-          .attr('text-anchor', 'middle')
-          .attr('dy', '.35em')
-          .attr('fill', '#1976d2')
-          .attr('font-size', 32)
-          .text('+');
-
         this.npcService.simulation.on('tick', () => {
-          this.nodeElements.attr('transform', (d: any) =>
-            `translate(${d.x}, ${d.y})`
-          );
-          this.adjustFontSize();
+          if (this.nodeElements) {
+            this.nodeElements.attr('transform', (d: any) =>
+              `translate(${d.x}, ${d.y})`
+            );
+            this.adjustFontSize();
+          }
         });
       });
 
       this.npcService.initSimulation(this.width, this.height);
       window.addEventListener('resize', this.resizeListener);
     });
+  }
+
+  // Helper to update D3 nodes selection and render new nodes
+  private updateNodes(): void {
+    let nodes: NpcOrAddNode[] = [...this.loadedNodes];
+    // Add a special node for 'Add Character'
+    const addNode: NpcOrAddNode = {
+      id: -1,
+      property_id: -1,
+      mbti_profile: '',
+      profile_name: 'Add Character',
+      profile_name_searchable: 'add character',
+      allow_commenting: false,
+      allow_voting: false,
+      user_id: -1,
+      contributor: '',
+      contributor_create_date: '',
+      contributor_pic_path: '',
+      display_order: 0,
+      edit_lock: 0,
+      edit_lock_picture: 0,
+      is_active: false,
+      is_approved: false,
+      mbti_enneagram_type: '',
+      mbti_type: '',
+      pdb_comment_access: false,
+      pdb_page_owner: -1,
+      pdb_public_access: false,
+      wiki_description: '',
+      wiki_description_html: '',
+      watch_count: 0,
+      comment_count: 0,
+      vote_count: 0,
+      vote_count_enneagram: 0,
+      vote_count_mbti: 0,
+      total_vote_counts: 0,
+      personality_type: '',
+      type_updated_date: '',
+      enneagram_vote: '',
+      enneagram_vote_id: 0,
+      mbti_vote: '',
+      mbti_vote_id: 0,
+      is_watching: false,
+      image_exists: false,
+      profile_image_url: '',
+      profile_image_credit: '',
+      profile_image_credit_id: 0,
+      profile_image_credit_type: '',
+      profile_image_credit_url: '',
+      alt_subcategory: '',
+      related_subcategories: '',
+      cat_id: 0,
+      category: 'add',
+      category_is_fictional: false,
+      sub_cat_id: 0,
+      subcategory: '',
+      subcat_link_info: { sub_cat_id: 0, cat_id: 0, property_id: 0, subcategory: '' },
+      related_subcat_link_info: [],
+      related_profiles: [],
+      functions: [],
+      systems: [],
+      breakdown_systems: {},
+      breakdown_config: { expand: {}, fire: {} },
+      mbti_letter_stats: [],
+      topic_info: {
+        can_generate: false,
+        topic: {
+          description: '', follow_count: 0, id: 0, is_following: false, is_join_pending: false, is_banned: false, is_moderated: false, name_readable: '', post_count: 0, source_profile_id: 0, source_type: '', join_to_post: false, can_pin: false, related_topics: []
+        },
+        topic_image_url: '',
+        source_location: { cid: 0, pid: 0, sub_cat_id: 0 },
+        can_post_image: false,
+        can_post_audio: false,
+        posts: { posts: [] }
+      },
+      self_reported_mbti: null,
+      isAddNode: true,
+      x: this.width / 2,
+      y: this.height / 2
+    };
+    nodes = [...nodes, addNode];
+
+    // Remove old nodes
+    this.zoomGroup.selectAll('g').remove();
+
+    this.nodeElements = this.zoomGroup.selectAll<SVGGElement, NpcOrAddNode>('g')
+      .data(nodes, (d: NpcOrAddNode) => String(d.id))
+      .enter()
+      .append('g')
+      .attr('class', d => d.isAddNode ? 'npc-node add-node' : 'npc-node')
+      .on('click', (_event, node: NpcOrAddNode) => {
+        if (node.isAddNode) {
+          this.ngZone.run(() => {
+            this.router.navigate(['/profile-selector']);
+          });
+        } else {
+          const profile = node;
+          if (profile) {
+            this.ngZone.run(() => {
+              this.profileService
+                .fetchProfile(String(node.id))
+                .subscribe(profile => (this.hoveredProfile = profile));
+            });
+          }
+        }
+      });
+
+    // Render normal nodes
+    this.nodeElements.filter((d: any) => !d.isAddNode)
+      .append('defs')
+      .append('clipPath')
+      .attr('id', d => `clip-${d.id}`)
+      .append('circle')
+      .attr('r', this.bubbleRadius)
+      .attr('cx', 0)
+      .attr('cy', 0);
+
+    this.nodeElements.filter((d: any) => !d.isAddNode)
+      .append('image')
+      .attr('xlink:href', d => d.profile_image_url ?? '')
+      .attr('x', -this.bubbleRadius)
+      .attr('y', -this.bubbleRadius)
+      .attr('width', this.bubbleRadius * 2)
+      .attr('height', this.bubbleRadius * 2)
+      .attr('clip-path', d => `url(#clip-${d.id})`);
+
+    this.nodeElements.filter((d: any) => !d.isAddNode)
+      .append('circle')
+      .attr('r', this.bubbleRadius)
+      .attr('fill', 'none')
+      .attr('stroke-width', 2)
+      .attr('stroke', d => this.getColorForCategory(d.category));
+
+    this.nodeElements.filter((d: any) => !d.isAddNode)
+      .append('path')
+      .attr('id', d => `arc-top-${d.id}`)
+      .attr('d', this.makeArcPath(true))
+      .attr('fill', 'none');
+
+    this.nodeElements.filter((d: any) => !d.isAddNode)
+      .append('path')
+      .attr('id', d => `arc-bottom-${d.id}`)
+      .attr('d', this.makeArcPath(false))
+      .attr('fill', 'none');
+
+    const topText = this.nodeElements.filter((d: any) => !d.isAddNode)
+      .append('text')
+      .attr('class', 'name-top')
+      .attr('dy', '-0.3em');
+
+    topText.append('textPath')
+      .attr('xlink:href', d => `#arc-top-${d.id}`)
+      .attr('startOffset', '50%')
+      .style('text-anchor', 'middle')
+      .text(d => this.splitName(d.mbti_profile || "")[0])
+      .attr('fill', d => this.getColorForCategory(d.category));
+
+    const bottomText = this.nodeElements.filter((d: any) => !d.isAddNode)
+      .append('text')
+      .attr('class', 'name-bottom')
+      .attr('dy', '0.8em');
+
+    bottomText.append('textPath')
+      .attr('xlink:href', d => `#arc-bottom-${d.id}`)
+      .attr('startOffset', '50%')
+      .style('text-anchor', 'middle')
+      .text(d => this.splitName(d.mbti_profile || "")[1])
+      .attr('fill', d => this.getColorForCategory(d.category));
+
+    // Render the special add node
+    const addNodeSel = this.nodeElements.filter((d: any) => d.isAddNode);
+    addNodeSel.append('circle')
+      .attr('r', this.bubbleRadius)
+      .attr('fill', '#fff')
+      .attr('stroke', '#1976d2')
+      .attr('stroke-width', 3);
+    addNodeSel.append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dy', '.35em')
+      .attr('fill', '#1976d2')
+      .attr('font-size', 32)
+      .text('+');
   }
 
   private onResize(): void {

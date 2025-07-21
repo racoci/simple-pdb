@@ -23,6 +23,10 @@ export class NpcSimulationService {
   public simulation!: NpcSimulation;
 
   public simulationReady$ = new Subject<void>();
+  public nodeAdded$ = new Subject<NpcNode>();
+
+  private width: number = 0;
+  private height: number = 0;
 
   private allMbtiTypes: string[] = [
     'INTJ','INTP','ENTJ','ENTP',
@@ -34,53 +38,37 @@ export class NpcSimulationService {
   constructor(private profileService: ProfileService) {}
 
   initSimulation(width: number, height: number, numProfiles: number = 20): void {
-    const profileRequests = Array.from({ length: numProfiles }, () =>
+    this.width = width;
+    this.height = height;
+    for (let i = 0; i < numProfiles; i++) {
       this.profileService.getRandomProfile().pipe(
         map(profile => {
           if (profile && profile.mbti_type) {
-            return profile ;
+            return profile;
           } else {
             return null;
           }
         }),
         catchError(() => of(null))
-      )
-    );
-
-    forkJoin(profileRequests).subscribe(results => {
-      for (const result of results) {
+      ).subscribe(result => {
         if (result) {
-          this.addNpc(result);
+          this.addNpc(result, true); // true = emit nodeAdded$
         }
-      }
-
-      // Only create the simulation if there are valid nodes
-      if (this.nodes.length > 0) {
-        this.simulation =     d3.forceSimulation<NpcNode, NpcLink>(this.nodes)
-          .force('charge',    d3.forceManyBody().strength(-50))
-          .force('center',    d3.forceCenter(width / 2, height / 2))
-          // Increased collision radius to account for larger node size
-          .force('collision', d3.forceCollide().radius(60))
-          .force('link',      d3.forceLink<NpcNode, NpcLink>(this.links)
-            .id(d => d.id)
-            .distance(link => link.distance));
-
-        this.simulationReady$.next();
-      }
-    });
+      });
+    }
   }
 
-  addNpc( profile: ProfileResponse): void {
+  addNpc(profile: ProfileResponse, emitNode: boolean = false): void {
     const newNode: NpcNode = { ...profile };
-    // Prefer the display name and capitalize each word for readability
     if (!newNode.profile_name && newNode.profile_name_searchable) {
       newNode.profile_name = newNode.profile_name_searchable;
     }
     if (!newNode.profile_name_searchable && newNode.profile_name) {
       newNode.profile_name_searchable = newNode.profile_name.toLowerCase();
     }
-    newNode.x = Math.random() * 100 + 50;
-    newNode.y = Math.random() * 100 + 50;
+    // Start at center
+    newNode.x = this.width / 2;
+    newNode.y = this.height / 2;
 
     for (const existing of this.nodes) {
       const shared = this.sharedLetters(existing.mbti_type, profile.mbti_type);
@@ -89,6 +77,19 @@ export class NpcSimulationService {
     }
     this.nodes.push(newNode);
 
+    // Create simulation if not already created
+    if (!this.simulation && this.width && this.height) {
+      this.simulation = d3.forceSimulation<NpcNode, NpcLink>(this.nodes)
+        .force('charge', d3.forceManyBody().strength(-50))
+        .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+        .force('collision', d3.forceCollide().radius(60))
+        .force('link', d3.forceLink<NpcNode, NpcLink>(this.links)
+          .id(d => d.id)
+          .distance(link => link.distance));
+      this.simulationReady$.next();
+    }
+
+    // Always update simulation with new nodes/links
     if (this.simulation) {
       this.simulation.nodes(this.nodes);
       const linkForce = this.simulation.force<d3.ForceLink<NpcNode, NpcLink>>('link');
@@ -96,6 +97,10 @@ export class NpcSimulationService {
         linkForce.links(this.links);
       }
       this.simulation.alpha(1).restart();
+    }
+
+    if (emitNode) {
+      this.nodeAdded$.next(newNode);
     }
   }
 
