@@ -1,3 +1,22 @@
+/* Special styling for the Add Character node in dark theme */
+.npc-node.add-node circle {
+  fill: transparent !important;
+  stroke: #f0f0f0 !important;
+  stroke-width: 2.5 !important;
+  cursor: pointer;
+  transition: stroke 0.2s, fill 0.2s;
+}
+.npc-node.add-node:hover circle {
+  stroke: #90caf9 !important;
+  fill: rgba(255,255,255,0.05) !important;
+}
+.npc-node.add-node text {
+  fill: #f0f0f0 !important;
+  font-size: 2.2rem !important;
+  font-weight: bold;
+  pointer-events: none;
+  user-select: none;
+}
 .simulation-wrapper {
   position: relative;
   display: flex;
