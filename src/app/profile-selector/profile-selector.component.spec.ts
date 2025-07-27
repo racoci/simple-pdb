@@ -37,7 +37,12 @@ describe('ProfileSelectorComponent', () => {
   });
 
   it('should filter profiles when search term changes', () => {
-    suggestionService.getSuggestions.and.returnValue(of({ data: { results: [], count: 0, cursor: { limit: 0, nextCursor: '' } }, error: { code: '', message: '', details: {} } }));
+    suggestionService.getSuggestions.and.returnValue(of(
+      {
+        data: { results: [], count: 0, cursor: { limit: 0, nextCursor: '' } },
+        error: { code: '', message: '', details: {} }
+      }
+    ));
     component.profiles = [
       { id: 1, mbti_profile: 'INTP' } as any,
       { id: 2, mbti_profile: 'ENTJ' } as any
